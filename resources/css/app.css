@@ -2,6 +2,11 @@
 @import 'prismjs/themes/prism.min.css';
 @import 'tailwindcss';
 
+@layer base {
+  [x-cloak] {
+    display: none !important;
+  }
+}
 
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 @source '../../storage/framework/views/*.php';
@@ -47,18 +52,18 @@
   --color-white: #ffffff;
   --color-black: #101828;
 
-  --color-brand-25: #f2f7ff;
-  --color-brand-50: #ecf3ff;
-  --color-brand-100: #dde9ff;
-  --color-brand-200: #c2d6ff;
-  --color-brand-300: #9cb9ff;
-  --color-brand-400: #7592ff;
-  --color-brand-500: #465fff;
-  --color-brand-600: #3641f5;
-  --color-brand-700: #2a31d8;
-  --color-brand-800: #252dae;
-  --color-brand-900: #262e89;
-  --color-brand-950: #161950;
+  --color-brand-25: #f7fcfc;
+  --color-brand-50: #e6f7f5;
+  --color-brand-100: #ccedeb;
+  --color-brand-200: #a6dfdc;
+  --color-brand-300: #7accc8;
+  --color-brand-400: #43b4af;
+  --color-brand-500: #0d9995;
+  --color-brand-600: #087f7b;
+  --color-brand-700: #066966;
+  --color-brand-800: #075653;
+  --color-brand-900: #064744;
+  --color-brand-950: #033331;
 
   --color-blue-light-25: #f5fbff;
   --color-blue-light-50: #f0f9ff;
@@ -82,7 +87,7 @@
   --color-gray-500: #667085;
   --color-gray-600: #475467;
   --color-gray-700: #344054;
-  --color-gray-800: #1d2939;
+  --color-gray-800: #1f2937;
   --color-gray-900: #101828;
   --color-gray-950: #0c111d;
   --color-gray-dark: #1a2231;
@@ -151,7 +156,7 @@
   --shadow-theme-xl: 0px 20px 24px -4px rgba(16, 24, 40, 0.08),
     0px 8px 8px -4px rgba(16, 24, 40, 0.03);
   --shadow-datepicker: -5px 0 0 #262d3c, 5px 0 0 #262d3c;
-  --shadow-focus-ring: 0px 0px 0px 4px rgba(70, 95, 255, 0.12);
+  --shadow-focus-ring: 0px 0px 0px 4px rgba(13, 153, 149, 0.12);
   --shadow-slider-navigation: 0px 1px 2px 0px rgba(16, 24, 40, 0.1),
     0px 1px 3px 0px rgba(16, 24, 40, 0.1);
   --shadow-tooltip: 0px 4px 6px -2px rgba(16, 24, 40, 0.05),
@@ -198,7 +203,7 @@
 }
 
 @utility menu-item-active {
-  @apply bg-brand-50 text-brand-500 dark:bg-brand-500/[0.12] dark:text-brand-400;
+  @apply bg-brand-50 text-brand-700 dark:bg-brand-500/[0.12] dark:text-brand-300;
 }
 
 @utility menu-item-inactive {
@@ -210,7 +215,7 @@
 }
 
 @utility menu-item-icon-active {
-  @apply text-brand-500 dark:text-brand-400;
+  @apply text-brand-700 dark:text-brand-300;
 }
 
 @utility menu-item-icon-inactive {
@@ -222,7 +227,7 @@
 } */
 
 @utility menu-item-arrow-active {
-  @apply rotate-180 text-brand-500 dark:text-brand-400;
+  @apply rotate-180 text-brand-700 dark:text-brand-300;
 }
 
 @utility menu-item-arrow-inactive {
@@ -234,7 +239,7 @@
 }
 
 @utility menu-dropdown-item-active {
-  @apply bg-brand-50 text-brand-500 dark:bg-brand-500/[0.12] dark:text-brand-400;
+  @apply bg-brand-50 text-brand-700 dark:bg-brand-500/[0.12] dark:text-brand-300;
 }
 
 @utility menu-dropdown-item-inactive {
@@ -537,13 +542,13 @@ span.flatpickr-weekday,
 .flatpickr-day.selected.nextMonthDay,
 .flatpickr-day.startRange.nextMonthDay,
 .flatpickr-day.endRange.nextMonthDay {
-  background: #465fff;
+  background: var(--color-brand-500);
   @apply !border-brand-500 !bg-brand-500 hover:!border-brand-500 hover:!bg-brand-500;
 }
 .flatpickr-day.selected.startRange + .endRange:not(:nth-child(7n + 1)),
 .flatpickr-day.startRange.startRange + .endRange:not(:nth-child(7n + 1)),
 .flatpickr-day.endRange.startRange + .endRange:not(:nth-child(7n + 1)) {
-  box-shadow: -10px 0 0 #465fff;
+  box-shadow: -10px 0 0 var(--color-brand-500);
 }
 
 .flatpickr-months .flatpickr-prev-month svg,
@@ -1164,7 +1169,7 @@ pre[class*='language-'] {
 }
 
 @utility menu-item-active {
-  @apply bg-brand-50 text-brand-500 dark:bg-brand-500/[0.12] dark:text-brand-400;
+  @apply bg-brand-50 text-brand-700 dark:bg-brand-500/[0.12] dark:text-brand-300;
 }
 
 @utility menu-item-inactive {
@@ -1172,7 +1177,7 @@ pre[class*='language-'] {
 }
 
 @utility menu-item-icon-active {
-  @apply text-brand-500 dark:text-brand-400;
+  @apply text-brand-700 dark:text-brand-300;
 }
 
 @utility menu-item-icon-inactive {
@@ -1184,7 +1189,7 @@ pre[class*='language-'] {
 }
 
 @utility menu-item-arrow-active {
-  @apply stroke-brand-500 dark:stroke-brand-400 rotate-180;
+  @apply stroke-brand-700 dark:stroke-brand-300 rotate-180;
 }
 
 @utility menu-item-arrow-inactive {
@@ -1196,7 +1201,7 @@ pre[class*='language-'] {
 }
 
 @utility menu-dropdown-item-active {
-  @apply bg-brand-50 text-brand-500 dark:bg-brand-500/[0.12] dark:text-brand-400;
+  @apply bg-brand-50 text-brand-700 dark:bg-brand-500/[0.12] dark:text-brand-300;
 }
 
 @utility menu-dropdown-item-inactive {
@@ -1232,7 +1237,7 @@ pre[class*='language-'] {
 }
 
 @utility docs-menu-item-active {
-  @apply bg-brand-50 text-brand-500 dark:bg-brand-500/[0.12] dark:text-brand-400;
+  @apply bg-brand-50 text-brand-700 dark:bg-brand-500/[0.12] dark:text-brand-300;
 }
 
 @utility docs-menu-item-inactive {

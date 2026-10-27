@@ -27,7 +27,7 @@
         @if ($search !== '')
             <div class="flex items-center justify-between rounded-lg bg-gray-50 px-4 py-3 text-sm text-gray-600 dark:bg-white/[0.03] dark:text-gray-400">
                 <span>Hasil pencarian untuk “{{ $search }}”</span>
-                <a href="{{ route('mobil.index') }}" class="font-medium text-brand-500 hover:text-brand-600 dark:text-brand-400">Bersihkan</a>
+                <a href="{{ route('mobil.index') }}" class="font-medium text-brand-600 hover:text-brand-700 dark:text-brand-300 dark:hover:text-brand-200">Bersihkan</a>
             </div>
         @endif
 
@@ -49,7 +49,7 @@
                         @forelse ($mobils as $mobil)
                             @php
                                 $statusColor = match ($mobil->status) {
-                                    'tersedia' => 'success',
+                                    'tersedia' => 'primary',
                                     'disewa' => 'warning',
                                     'perawatan' => 'error',
                                 };
@@ -72,7 +72,7 @@
                                 <td class="px-5 py-4 sm:px-6"><x-ui.badge :color="$statusColor">{{ ucfirst($mobil->status) }}</x-ui.badge></td>
                                 <td class="px-5 py-4 text-end sm:px-6">
                                     <div class="inline-flex items-center gap-2">
-                                        <a href="{{ route('mobil.edit', $mobil) }}" class="rounded-lg px-3 py-2 text-sm font-medium text-brand-500 transition hover:bg-brand-50 dark:text-brand-400 dark:hover:bg-brand-500/15">Edit</a>
+                                        <a href="{{ route('mobil.edit', $mobil) }}" class="rounded-lg px-3 py-2 text-sm font-medium text-brand-600 transition hover:bg-brand-50 hover:text-brand-700 dark:text-brand-300 dark:hover:bg-brand-500/15 dark:hover:text-brand-200">Edit</a>
                                         <form action="{{ route('mobil.destroy', $mobil) }}" method="POST">
                                             @csrf
                                             @method('DELETE')

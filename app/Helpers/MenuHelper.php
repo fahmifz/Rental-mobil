@@ -10,7 +10,8 @@ class MenuHelper
             [
                 'icon' => 'dashboard',
                 'name' => 'Dashboard',
-                'path' => '/',
+                'path' => '/dashboard',
+                'route' => 'dashboard',
             ],
             [
                 'icon' => 'ecommerce',
@@ -27,7 +28,8 @@ class MenuHelper
             [
                 'icon' => 'calendar',
                 'name' => 'Reservasi / Penyewaan',
-                'available' => false,
+                'path' => '/admin/reservasi',
+                'route' => 'admin.reservasi.index',
             ],
             [
                 'icon' => 'ecommerce',

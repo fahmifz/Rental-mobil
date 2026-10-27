@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Mobil extends Model
 {
@@ -39,5 +40,10 @@ class Mobil extends Model
             KategoriMobil::class,
             'kategori_mobil_id'
         );
+    }
+
+    public function reservasis(): HasMany
+    {
+        return $this->hasMany(Reservasi::class);
     }
 }

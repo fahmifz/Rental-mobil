@@ -62,10 +62,10 @@
     <div class="pt-8 pb-7 flex items-center gap-2" :class="(!$store.sidebar.isExpanded && !$store.sidebar.isHovered && !$store.sidebar.isMobileOpen) ? 'justify-center' : 'justify-between'">
         <a href="{{ route('dashboard') }}" class="flex items-center gap-2">
             <div class="hidden items-center gap-2 [.sidebar-expanded_&]:flex">
-                <img src="/images/logo/logo-icon.svg" alt="Awal Putra Rentcar" width="32" height="32" />
+                <img src="/images/hero/logo.png" alt="Awal Putra Rentcar" width="32" height="32" />
                 <span class="text-lg font-semibold text-gray-800 dark:text-white/90">Awal Putra Rentcar</span>
             </div>
-            <img class="block [.sidebar-expanded_&]:hidden" src="/images/logo/logo-icon.svg" alt="Awal Putra Rentcar" width="32" height="32" />
+            <img class="block [.sidebar-expanded_&]:hidden" src="/images/hero/logo.png" alt="Awal Putra Rentcar" width="32" height="32" />
         </a>
     </div>
 
@@ -132,7 +132,7 @@
                                             <svg x-show="$store.sidebar.isExpanded || $store.sidebar.isHovered || $store.sidebar.isMobileOpen"
                                                 class="ltr:ml-auto rtl:mr-auto w-5 h-5 transition-transform duration-200"
                                                 :class="{
-                                                    'rotate-180 text-brand-500': isSubmenuOpen({{ $groupIndex }},
+                                                    'rotate-180 text-brand-700 dark:text-brand-300': isSubmenuOpen({{ $groupIndex }},
                                                         {{ $itemIndex }}),
                                                     'text-gray-500 dark:text-gray-400': !isSubmenuOpen(
                                                         {{ $groupIndex }}, {{ $itemIndex }})

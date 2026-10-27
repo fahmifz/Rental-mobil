@@ -1,9 +1,18 @@
 <?php
 
 use App\Models\KategoriMobil;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
+
+beforeEach(function () {
+    $admin = User::factory()->create();
+    $admin->role = 'admin';
+    $admin->save();
+
+    $this->actingAs($admin);
+});
 
 test('car category index page can be displayed', function () {
     $this->get(route('kategori-mobil.index'))
