@@ -7,6 +7,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\LocaleController;
 use App\Http\Controllers\Pelanggan\ReservasiController;
+use App\Http\Controllers\Pelanggan\RekomendasiController;
 use App\Http\Controllers\Public\PublicLandingController;
 use Illuminate\Support\Facades\Route;
 
@@ -27,6 +28,8 @@ Route::post('/logout', [AuthController::class, 'logout'])
 
 Route::middleware(['auth', 'role:pelanggan'])->group(function (): void {
     Route::get('/akun', [AuthController::class, 'account'])->name('account');
+    Route::get('/rekomendasi', [RekomendasiController::class, 'index'])
+        ->name('pelanggan.rekomendasi.index');
 
     Route::get('/reservasi', [ReservasiController::class, 'index'])->name('reservasi.index');
     Route::get('/reservasi/buat', [ReservasiController::class, 'create'])->name('reservasi.create');
