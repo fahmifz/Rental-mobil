@@ -179,6 +179,9 @@ test('customers cannot access admin reservation status endpoints', function () {
     $this->actingAs($customer)
         ->post(route('admin.reservasi.reject', $reservasi))
         ->assertForbidden();
+    $this->actingAs($customer)
+        ->post(route('admin.reservasi.complete', $reservasi))
+        ->assertForbidden();
 
     $this->assertDatabaseHas('reservasis', [
         'id' => $reservasi->id,
@@ -237,6 +240,76 @@ test('a reservation ending on another reservation start date is considered a con
 
     $this->assertDatabaseHas('reservasis', [
         'id' => $target->id,
+        'status' => 'menunggu_konfirmasi',
+    ]);
+});
+
+test('an admin can complete an approved reservation on its end date', function () {
+    $admin = adminReservasiUser('admin');
+    $customer = adminReservasiUser('pelanggan');
+    $mobil = adminReservasiMobil('DD 6796 AB');
+    $reservasi = createAdminTestReservation(
+        $customer,
+        $mobil,
+        today()->subDays(2)->toDateString(),
+        today()->toDateString(),
+        'disetujui',
+    );
+
+    $this->actingAs($admin)
+        ->post(route('admin.reservasi.complete', $reservasi))
+        ->assertRedirect(route('admin.reservasi.index'))
+        ->assertSessionHas('success', 'Reservasi berhasil diselesaikan.');
+
+    $this->assertDatabaseHas('reservasis', [
+        'id' => $reservasi->id,
+        'status' => 'selesai',
+    ]);
+});
+
+test('an approved reservation cannot be completed before its end date', function () {
+    $admin = adminReservasiUser('admin');
+    $customer = adminReservasiUser('pelanggan');
+    $mobil = adminReservasiMobil('DD 6797 AB');
+    $reservasi = createAdminTestReservation(
+        $customer,
+        $mobil,
+        today()->toDateString(),
+        today()->addDay()->toDateString(),
+        'disetujui',
+    );
+
+    $this->actingAs($admin)
+        ->from(route('admin.reservasi.index'))
+        ->post(route('admin.reservasi.complete', $reservasi))
+        ->assertRedirect(route('admin.reservasi.index'))
+        ->assertSessionHasErrors('reservasi');
+
+    $this->assertDatabaseHas('reservasis', [
+        'id' => $reservasi->id,
+        'status' => 'disetujui',
+    ]);
+});
+
+test('only approved reservations can be completed', function () {
+    $admin = adminReservasiUser('admin');
+    $customer = adminReservasiUser('pelanggan');
+    $mobil = adminReservasiMobil('DD 6798 AB');
+    $reservasi = createAdminTestReservation(
+        $customer,
+        $mobil,
+        today()->subDays(2)->toDateString(),
+        today()->toDateString(),
+    );
+
+    $this->actingAs($admin)
+        ->from(route('admin.reservasi.index'))
+        ->post(route('admin.reservasi.complete', $reservasi))
+        ->assertRedirect(route('admin.reservasi.index'))
+        ->assertSessionHasErrors('reservasi');
+
+    $this->assertDatabaseHas('reservasis', [
+        'id' => $reservasi->id,
         'status' => 'menunggu_konfirmasi',
     ]);
 });

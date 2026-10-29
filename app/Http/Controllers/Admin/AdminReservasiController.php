@@ -1,7 +1,8 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Controller;
 use App\Models\Mobil;
 use App\Models\Reservasi;
 use Illuminate\Http\RedirectResponse;
@@ -32,6 +33,33 @@ class AdminReservasiController extends Controller
     public function reject(Reservasi $reservasi): RedirectResponse
     {
         return $this->updatePendingReservation($reservasi, 'ditolak');
+    }
+
+    public function complete(Reservasi $reservasi): RedirectResponse
+    {
+        DB::transaction(function () use ($reservasi): void {
+            $lockedReservasi = Reservasi::query()
+                ->lockForUpdate()
+                ->findOrFail($reservasi->id);
+
+            if ($lockedReservasi->status !== 'disetujui') {
+                throw ValidationException::withMessages([
+                    'reservasi' => 'Hanya reservasi yang disetujui yang dapat diselesaikan.',
+                ]);
+            }
+
+            if ($lockedReservasi->tanggal_selesai->isAfter(today())) {
+                throw ValidationException::withMessages([
+                    'reservasi' => 'Reservasi belum dapat diselesaikan sebelum tanggal selesai sewa.',
+                ]);
+            }
+
+            $lockedReservasi->update(['status' => 'selesai']);
+        });
+
+        return redirect()
+            ->route('admin.reservasi.index')
+            ->with('success', 'Reservasi berhasil diselesaikan.');
     }
 
     private function updatePendingReservation(Reservasi $reservasi, string $status): RedirectResponse

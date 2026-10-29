@@ -5,23 +5,18 @@
 
   <div class="grid grid-cols-12 gap-4 md:gap-6">
     <div class="col-span-12 space-y-6 xl:col-span-7">
-      <x-ecommerce.ecommerce-metrics />
-      <x-ecommerce.monthly-sale />
+      @include('components.ecommerce.ecommerce-metrics', ['stats' => $stats])
     </div>
     <div class="col-span-12 xl:col-span-5">
-        <x-ecommerce.monthly-target />
+        @include('components.ecommerce.monthly-target', ['stats' => $stats])
     </div>
 
     <div class="col-span-12">
-      <x-ecommerce.statistics-chart />
+      @include('components.ecommerce.statistics-chart', ['monthlyReservationChart' => $monthlyReservationChart])
     </div>
 
-    <div class="col-span-12 xl:col-span-5">
-      <x-ecommerce.customer-demographic />
-    </div>
-
-    <div class="col-span-12 xl:col-span-7">
-      <x-ecommerce.recent-orders />
+    <div class="col-span-12">
+      @include('components.ecommerce.recent-orders', ['recentReservations' => $recentReservations])
     </div>
   </div>
 @endsection

@@ -1,12 +1,13 @@
 <?php
 
-use App\Http\Controllers\AdminReservasiController;
+use App\Http\Controllers\Admin\AdminReservasiController;
+use App\Http\Controllers\Admin\KategoriMobilController;
+use App\Http\Controllers\Admin\MobilController;
 use App\Http\Controllers\AuthController;
-use App\Http\Controllers\KategoriMobilController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\LocaleController;
-use App\Http\Controllers\MobilController;
-use App\Http\Controllers\PublicLandingController;
-use App\Http\Controllers\ReservasiController;
+use App\Http\Controllers\Pelanggan\ReservasiController;
+use App\Http\Controllers\Public\PublicLandingController;
 use Illuminate\Support\Facades\Route;
 
 // Locale Switch Route
@@ -30,13 +31,12 @@ Route::middleware(['auth', 'role:pelanggan'])->group(function (): void {
     Route::get('/reservasi', [ReservasiController::class, 'index'])->name('reservasi.index');
     Route::get('/reservasi/buat', [ReservasiController::class, 'create'])->name('reservasi.create');
     Route::post('/reservasi', [ReservasiController::class, 'store'])->name('reservasi.store');
+    Route::post('/reservasi/{reservasi}/rating', [ReservasiController::class, 'storeRating'])->name('reservasi.rating.store');
     Route::get('/reservasi/{reservasi}', [ReservasiController::class, 'show'])->name('reservasi.show');
 });
 
 Route::middleware(['auth', 'role:admin'])->group(function (): void {
-    Route::get('/dashboard', function () {
-        return view('pages.dashboard.ecommerce', ['title' => 'Rental Mobil Dashboard']);
-    })->name('dashboard');
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     Route::get('/admin/reservasi', [AdminReservasiController::class, 'index'])
         ->name('admin.reservasi.index');
@@ -44,11 +44,14 @@ Route::middleware(['auth', 'role:admin'])->group(function (): void {
         ->name('admin.reservasi.approve');
     Route::post('/admin/reservasi/{reservasi}/tolak', [AdminReservasiController::class, 'reject'])
         ->name('admin.reservasi.reject');
+    Route::post('/admin/reservasi/{reservasi}/selesaikan', [AdminReservasiController::class, 'complete'])
+        ->name('admin.reservasi.complete');
 
     Route::resource('kategori-mobil', KategoriMobilController::class)->except('show');
     Route::resource('mobil', MobilController::class)->except('show');
 });
 
+Route::middleware(['auth', 'role:admin'])->group(function (): void {
 // calender pages
 Route::get('/calendar', function () {
     return view('pages.calender', ['title' => 'Calendar']);
@@ -75,11 +78,14 @@ Route::get('/blank', function () {
     return view('pages.blank', ['title' => 'Blank']);
 })->name('blank');
 
+});
+
 // error pages
 Route::get('/error-404', function () {
     return view('pages.errors.error-404', ['title' => 'Error 404']);
 })->name('error-404');
 
+Route::middleware(['auth', 'role:admin'])->group(function (): void {
 // chart pages
 Route::get('/line-chart', function () {
     return view('pages.chart.line-chart', ['title' => 'Line Chart']);
@@ -113,3 +119,5 @@ Route::get('/image', function () {
 Route::get('/videos', function () {
     return view('pages.ui-elements.videos', ['title' => 'Videos']);
 })->name('videos');
+
+});

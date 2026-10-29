@@ -52,7 +52,7 @@
 
             <div class="hidden h-full items-center justify-center bg-brand-950 p-12 lg:flex">
                 <div class="max-w-sm text-center">
-                    <img src="/images/logo/logo-icon.svg" alt="Awal Putra Rentcar" width="48" height="48" class="mx-auto">
+                    <img src="/images/hero/logo.png" alt="Awal Putra Rentcar" width="100" height="100" class="mx-auto">
                     <h2 class="mt-6 text-title-sm font-semibold text-white">Awal Putra Rentcar</h2>
                     <p class="mt-3 text-theme-sm text-white/70">Akun baru akan dibuat sebagai pelanggan.</p>
                 </div>

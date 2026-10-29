@@ -37,6 +37,19 @@ test('a customer can log in with valid credentials', function () {
     $this->assertAuthenticatedAs($user);
 });
 
+test('an admin is redirected to the dashboard after login', function () {
+    $admin = User::factory()->create();
+    $admin->role = 'admin';
+    $admin->save();
+
+    $this->post(route('login.store'), [
+        'email' => $admin->email,
+        'password' => 'password',
+    ])->assertRedirect(route('dashboard'));
+
+    $this->assertAuthenticatedAs($admin);
+});
+
 test('login rejects invalid credentials', function () {
     $user = User::factory()->create();
 
@@ -88,4 +101,21 @@ test('admins can access admin routes but not the customer account page', functio
     $this->actingAs($admin)->get(route('mobil.index'))->assertOk();
     $this->actingAs($admin)->get(route('kategori-mobil.index'))->assertOk();
     $this->actingAs($admin)->get(route('account'))->assertForbidden();
+});
+
+test('TailAdmin utility pages are restricted to administrators', function () {
+    $customer = User::factory()->create();
+    $customer->role = 'pelanggan';
+    $customer->save();
+
+    $this->get(route('calendar'))->assertRedirect(route('login'));
+    $this->actingAs($customer)->get(route('calendar'))->assertForbidden();
+    $this->actingAs($customer)->get(route('profile'))->assertForbidden();
+
+    $admin = User::factory()->create();
+    $admin->role = 'admin';
+    $admin->save();
+
+    $this->actingAs($admin)->get(route('calendar'))->assertOk();
+    $this->actingAs($admin)->get(route('profile'))->assertOk();
 });

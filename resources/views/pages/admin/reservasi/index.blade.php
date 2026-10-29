@@ -65,6 +65,13 @@
                                                 <button type="submit" class="rounded-lg bg-error-50 px-3 py-2 text-sm font-medium text-error-700 transition hover:bg-error-100 dark:bg-error-500/15 dark:text-error-400 dark:hover:bg-error-500/25">Tolak</button>
                                             </form>
                                         </div>
+                                    @elseif ($reservasi->status === 'disetujui' && $reservasi->canBeCompleted())
+                                        <form action="{{ route('admin.reservasi.complete', $reservasi) }}" method="POST" onsubmit="return confirm('Selesaikan reservasi ini?')">
+                                            @csrf
+                                            <button type="submit" class="rounded-lg bg-brand-500 px-3 py-2 text-sm font-medium text-white transition hover:bg-brand-600">Selesaikan</button>
+                                        </form>
+                                    @elseif ($reservasi->status === 'disetujui')
+                                        <span class="text-theme-xs text-gray-400 dark:text-gray-500">Menunggu tanggal selesai</span>
                                     @else
                                         <span class="text-theme-xs text-gray-400 dark:text-gray-500">Sudah diproses</span>
                                     @endif

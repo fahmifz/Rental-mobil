@@ -15,6 +15,16 @@
                 <a href="{{ route('reservasi.create') }}" class="inline-flex items-center justify-center rounded-lg bg-brand-500 px-4 py-2.5 text-theme-sm font-medium text-white shadow-theme-xs transition hover:bg-brand-600">Buat Reservasi</a>
             </div>
 
+            @if ($pendingRatingsCount > 0)
+                <div class="mt-6 rounded-xl border border-warning-200 bg-warning-50 px-4 py-3 text-theme-sm text-warning-700 dark:border-warning-500/20 dark:bg-warning-500/15 dark:text-warning-400">
+                    Ada {{ $pendingRatingsCount }} reservasi selesai yang menunggu rating.
+                </div>
+            @else
+                <div class="mt-6 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-theme-sm text-gray-500 dark:border-gray-800 dark:bg-white/[0.03] dark:text-gray-400">
+                    Tidak ada reservasi selesai yang menunggu rating.
+                </div>
+            @endif
+
             @if ($reservasis->isEmpty())
                 <div class="mt-8 rounded-xl border border-dashed border-gray-300 bg-gray-50 px-6 py-12 text-center dark:border-gray-700 dark:bg-white/[0.03]">
                     <h2 class="text-theme-xl font-semibold text-gray-800 dark:text-white/90">Belum ada reservasi</h2>
@@ -52,7 +62,16 @@
                                         <td class="px-5 py-4 text-theme-sm text-gray-600 dark:text-gray-300">{{ $reservasi->durasi_sewa }} hari</td>
                                         <td class="px-5 py-4 text-theme-sm text-gray-600 dark:text-gray-300">Rp{{ number_format((float) $reservasi->total_biaya, 0, ',', '.') }}</td>
                                         <td class="px-5 py-4"><x-ui.badge :color="$statusColor">{{ ucwords(str_replace('_', ' ', $reservasi->status)) }}</x-ui.badge></td>
-                                        <td class="px-5 py-4 text-end"><a href="{{ route('reservasi.show', $reservasi) }}" class="text-theme-sm font-medium text-brand-600 hover:text-brand-700 dark:text-brand-300 dark:hover:text-brand-200">Lihat</a></td>
+                                        <td class="px-5 py-4 text-end">
+                                            <div class="flex flex-col items-end gap-2">
+                                                <a href="{{ route('reservasi.show', $reservasi) }}" class="text-theme-sm font-medium text-brand-600 hover:text-brand-700 dark:text-brand-300 dark:hover:text-brand-200">Lihat</a>
+                                                @if ($reservasi->status === 'selesai' && !$reservasi->rating)
+                                                    <a href="{{ route('reservasi.show', $reservasi) }}#rating" class="text-theme-xs font-medium text-brand-600 hover:text-brand-700 dark:text-brand-300 dark:hover:text-brand-200">Beri Rating</a>
+                                                @elseif ($reservasi->rating)
+                                                    <span class="text-theme-xs font-medium text-success-700 dark:text-success-400">Sudah dinilai: {{ $reservasi->rating->rating }}/5</span>
+                                                @endif
+                                            </div>
+                                        </td>
                                     </tr>
                                 @endforeach
                             </tbody>

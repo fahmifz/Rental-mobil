@@ -1,7 +1,8 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreKategoriMobilRequest;
 use App\Http\Requests\UpdateKategoriMobilRequest;
 use App\Models\KategoriMobil;

@@ -3,14 +3,13 @@ export const initChartThree = () => {
     const chartElement = document.querySelector('#chartThree');
 
     if (chartElement) {
+        const categories = JSON.parse(chartElement.dataset.categories || '[]');
+        const reservations = JSON.parse(chartElement.dataset.reservations || '[]');
+
         const chartThreeOptions = {
             series: [{
                 name: "Reservasi",
-                data: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-            },
-            {
-                name: "Pendapatan",
-                data: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                data: reservations,
             },
             ],
             legend: {
@@ -18,7 +17,7 @@ export const initChartThree = () => {
                 position: "top",
                 horizontalAlign: "left",
             },
-            colors: ["#465FFF", "#9CB9FF"],
+            colors: ["#465FFF"],
             chart: {
                 fontFamily: "Outfit, sans-serif",
                 height: 310,
@@ -36,7 +35,7 @@ export const initChartThree = () => {
             },
             stroke: {
                 curve: "straight",
-                width: ["2", "2"],
+                width: 2,
             },
             markers: {
                 size: 0,
@@ -67,20 +66,7 @@ export const initChartThree = () => {
             },
             xaxis: {
                 type: "category",
-                categories: [
-                    "Jan",
-                    "Feb",
-                    "Mar",
-                    "Apr",
-                    "May",
-                    "Jun",
-                    "Jul",
-                    "Aug",
-                    "Sep",
-                    "Oct",
-                    "Nov",
-                    "Dec",
-                ],
+                categories,
                 axisBorder: {
                     show: false,
                 },

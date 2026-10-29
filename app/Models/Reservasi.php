@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Reservasi extends Model
 {
@@ -37,5 +38,16 @@ class Reservasi extends Model
     public function mobil(): BelongsTo
     {
         return $this->belongsTo(Mobil::class);
+    }
+
+    public function rating(): HasOne
+    {
+        return $this->hasOne(Rating::class);
+    }
+
+    public function canBeCompleted(): bool
+    {
+        return $this->status === 'disetujui'
+            && !$this->tanggal_selesai->isAfter(today());
     }
 }

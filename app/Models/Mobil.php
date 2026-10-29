@@ -46,4 +46,9 @@ class Mobil extends Model
     {
         return $this->hasMany(Reservasi::class);
     }
+
+    public function ratings(): HasMany
+    {
+        return $this->hasMany(Rating::class);
+    }
 }
