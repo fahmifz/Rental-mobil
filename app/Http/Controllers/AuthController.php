@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\LoginRequest;
 use App\Http\Requests\RegisterRequest;
+use App\Http\Requests\UpdateProfileRequest;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -70,6 +71,23 @@ class AuthController extends Controller
     public function account(Request $request): View
     {
         return view('pages.account', ['user' => $request->user()]);
+    }
+
+    public function profile(Request $request): View
+    {
+        return view('pages.profile', [
+            'title' => 'Profil',
+            'user' => $request->user(),
+        ]);
+    }
+
+    public function updateProfile(UpdateProfileRequest $request): RedirectResponse
+    {
+        $request->user()->update($request->validated());
+
+        return redirect()
+            ->route('profile')
+            ->with('success', 'Profil berhasil diperbarui.');
     }
 
     public function logout(Request $request): RedirectResponse

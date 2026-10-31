@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\AdminReservasiController;
 use App\Http\Controllers\Admin\KategoriMobilController;
 use App\Http\Controllers\Admin\MobilController;
+use App\Http\Controllers\Admin\PembayaranController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\LocaleController;
@@ -41,6 +42,19 @@ Route::middleware(['auth', 'role:pelanggan'])->group(function (): void {
 Route::middleware(['auth', 'role:admin'])->group(function (): void {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
+    Route::get('/admin/pembayaran', [PembayaranController::class, 'index'])
+        ->name('admin.pembayaran.index');
+    Route::get('/admin/pembayaran/reservasi/{reservasi}', [PembayaranController::class, 'show'])
+        ->name('admin.pembayaran.show');
+    Route::get('/admin/pembayaran/reservasi/{reservasi}/create', [PembayaranController::class, 'create'])
+        ->name('admin.pembayaran.create');
+    Route::post('/admin/pembayaran/reservasi/{reservasi}', [PembayaranController::class, 'store'])
+        ->name('admin.pembayaran.store');
+    Route::get('/admin/pembayaran/reservasi/{reservasi}/edit', [PembayaranController::class, 'edit'])
+        ->name('admin.pembayaran.edit');
+    Route::put('/admin/pembayaran/{pembayaran}', [PembayaranController::class, 'update'])
+        ->name('admin.pembayaran.update');
+
     Route::get('/admin/reservasi', [AdminReservasiController::class, 'index'])
         ->name('admin.reservasi.index');
     Route::post('/admin/reservasi/{reservasi}/setujui', [AdminReservasiController::class, 'approve'])
@@ -61,9 +75,8 @@ Route::get('/calendar', function () {
 })->name('calendar');
 
 // profile pages
-Route::get('/profile', function () {
-    return view('pages.profile', ['title' => 'Profile']);
-})->name('profile');
+Route::get('/profile', [AuthController::class, 'profile'])->name('profile');
+Route::put('/profile', [AuthController::class, 'updateProfile'])->name('profile.update');
 
 // form pages
 Route::get('/form-elements', function () {

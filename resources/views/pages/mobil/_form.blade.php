@@ -49,6 +49,7 @@
                 @endforeach
             </select>
             @error('status') <p class="mt-1.5 text-sm text-error-500">{{ $message }}</p> @enderror
+            <p class="mt-1.5 text-theme-xs text-gray-500 dark:text-gray-400">Status Tersedia/Disewa diselaraskan otomatis dengan reservasi aktif. Status Perawatan dipertahankan.</p>
         </div>
         <div>
             <label for="tahun" class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Tahun</label>

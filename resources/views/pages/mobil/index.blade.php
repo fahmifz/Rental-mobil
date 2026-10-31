@@ -9,6 +9,12 @@
         </div>
     @endif
 
+    @if (session('error'))
+        <div class="mb-6 rounded-xl border border-error-200 bg-error-50 px-4 py-3 text-sm text-error-700 dark:border-error-500/20 dark:bg-error-500/15 dark:text-error-400" role="alert">
+            {{ session('error') }}
+        </div>
+    @endif
+
     <x-common.component-card title="Data Mobil" desc="Kelola armada mobil yang tersedia untuk disewakan.">
         <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <form action="{{ route('mobil.index') }}" method="GET" class="flex w-full max-w-md gap-2">
@@ -73,7 +79,7 @@
                                 <td class="px-5 py-4 text-end sm:px-6">
                                     <div class="inline-flex items-center gap-2">
                                         <a href="{{ route('mobil.edit', $mobil) }}" class="rounded-lg px-3 py-2 text-sm font-medium text-brand-600 transition hover:bg-brand-50 hover:text-brand-700 dark:text-brand-300 dark:hover:bg-brand-500/15 dark:hover:text-brand-200">Edit</a>
-                                        <form action="{{ route('mobil.destroy', $mobil) }}" method="POST">
+                                        <form action="{{ route('mobil.destroy', $mobil) }}" method="POST" onsubmit="return confirm('Hapus mobil ini? Data reservasi dan rating yang terkait tidak akan dihapus.')">
                                             @csrf
                                             @method('DELETE')
                                             <button type="submit" class="rounded-lg px-3 py-2 text-sm font-medium text-error-600 transition hover:bg-error-50 dark:text-error-400 dark:hover:bg-error-500/15">Hapus</button>

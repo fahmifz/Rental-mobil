@@ -9,6 +9,12 @@
         </div>
     @endif
 
+    @if (session('error'))
+        <div class="mb-6 rounded-xl border border-error-200 bg-error-50 px-4 py-3 text-sm text-error-700 dark:border-error-500/20 dark:bg-error-500/15 dark:text-error-400" role="alert">
+            {{ session('error') }}
+        </div>
+    @endif
+
     <x-common.component-card title="Car Categories" desc="Manage the vehicle categories available for rental.">
         <div class="flex justify-end">
             <a href="{{ route('kategori-mobil.create') }}"
@@ -60,7 +66,12 @@
                                             class="rounded-lg px-3 py-2 text-sm font-medium text-brand-500 transition hover:bg-brand-50 dark:text-brand-400 dark:hover:bg-brand-500/15">
                                             Edit
                                         </a>
-                                        <form action="{{ route('kategori-mobil.destroy', $kategoriMobil) }}" method="POST">
+                                        <form action="{{ route('kategori-mobil.destroy', $kategoriMobil) }}" method="POST"
+                                            onsubmit="return confirm(@js(
+                                                $kategoriMobil->mobil()->exists()
+                                                    ? 'Hapus kategori ini? Mobil yang terkait tidak akan dihapus, tetapi kategori mobil tersebut akan menjadi kosong atau null.'
+                                                    : 'Hapus kategori ini?'
+                                            ))">
                                             @csrf
                                             @method('DELETE')
                                             <button type="submit"

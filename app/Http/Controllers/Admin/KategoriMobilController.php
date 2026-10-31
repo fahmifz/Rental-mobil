@@ -7,6 +7,7 @@ use App\Http\Requests\StoreKategoriMobilRequest;
 use App\Http\Requests\UpdateKategoriMobilRequest;
 use App\Models\KategoriMobil;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Database\QueryException;
 use Illuminate\View\View;
 
 class KategoriMobilController extends Controller
@@ -50,7 +51,13 @@ class KategoriMobilController extends Controller
 
     public function destroy(KategoriMobil $kategoriMobil): RedirectResponse
     {
-        $kategoriMobil->delete();
+        try {
+            $kategoriMobil->delete();
+        } catch (QueryException) {
+            return redirect()
+                ->route('kategori-mobil.index')
+                ->with('error', 'Kategori tidak dapat dihapus karena terjadi kendala pada database. Silakan coba kembali.');
+        }
 
         return redirect()
             ->route('kategori-mobil.index')

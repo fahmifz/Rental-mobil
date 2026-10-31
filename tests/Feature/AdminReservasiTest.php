@@ -116,6 +116,74 @@ test('an admin can approve a pending reservation without changing car status', f
         ->assertSee('Disetujui');
 });
 
+test('approving a reservation active today marks the car as rented', function () {
+    $admin = adminReservasiUser('admin');
+    $customer = adminReservasiUser('pelanggan');
+    $mobil = adminReservasiMobil('DD 6788 AB');
+    $reservasi = createAdminTestReservation(
+        $customer,
+        $mobil,
+        today()->toDateString(),
+        today()->addDays(2)->toDateString(),
+    );
+
+    $this->actingAs($admin)
+        ->post(route('admin.reservasi.approve', $reservasi))
+        ->assertRedirect(route('admin.reservasi.index'))
+        ->assertSessionHas('success', 'Reservasi berhasil disetujui.');
+
+    expect($mobil->fresh()->status)->toBe('disewa');
+});
+
+test('an admin cannot approve a reservation for a car under maintenance', function () {
+    $admin = adminReservasiUser('admin');
+    $customer = adminReservasiUser('pelanggan');
+    $mobil = adminReservasiMobil('DD 6787 AB');
+    $mobil->update(['status' => 'perawatan']);
+    $reservasi = createAdminTestReservation(
+        $customer,
+        $mobil,
+        today()->toDateString(),
+        today()->addDays(2)->toDateString(),
+    );
+
+    $this->actingAs($admin)
+        ->from(route('admin.reservasi.index'))
+        ->post(route('admin.reservasi.approve', $reservasi))
+        ->assertRedirect(route('admin.reservasi.index'))
+        ->assertSessionHasErrors('reservasi');
+
+    expect($mobil->fresh()->status)->toBe('perawatan');
+
+    $this->assertDatabaseHas('reservasis', [
+        'id' => $reservasi->id,
+        'status' => 'menunggu_konfirmasi',
+    ]);
+});
+
+test('an admin cannot approve a reservation whose end date has passed', function () {
+    $admin = adminReservasiUser('admin');
+    $customer = adminReservasiUser('pelanggan');
+    $mobil = adminReservasiMobil('DD 6786 AB');
+    $reservasi = createAdminTestReservation(
+        $customer,
+        $mobil,
+        today()->subDays(3)->toDateString(),
+        today()->subDay()->toDateString(),
+    );
+
+    $this->actingAs($admin)
+        ->from(route('admin.reservasi.index'))
+        ->post(route('admin.reservasi.approve', $reservasi))
+        ->assertRedirect(route('admin.reservasi.index'))
+        ->assertSessionHasErrors('reservasi');
+
+    $this->assertDatabaseHas('reservasis', [
+        'id' => $reservasi->id,
+        'status' => 'menunggu_konfirmasi',
+    ]);
+});
+
 test('an admin can reject a pending reservation', function () {
     $admin = adminReservasiUser('admin');
     $customer = adminReservasiUser('pelanggan');
@@ -248,6 +316,7 @@ test('an admin can complete an approved reservation on its end date', function (
     $admin = adminReservasiUser('admin');
     $customer = adminReservasiUser('pelanggan');
     $mobil = adminReservasiMobil('DD 6796 AB');
+    $mobil->update(['status' => 'disewa']);
     $reservasi = createAdminTestReservation(
         $customer,
         $mobil,
@@ -265,6 +334,92 @@ test('an admin can complete an approved reservation on its end date', function (
         'id' => $reservasi->id,
         'status' => 'selesai',
     ]);
+    expect($mobil->fresh()->status)->toBe('tersedia');
+});
+
+test('completing a reservation keeps the car rented while another reservation is active today', function () {
+    $admin = adminReservasiUser('admin');
+    $customer = adminReservasiUser('pelanggan');
+    $mobil = adminReservasiMobil('DD 6796 AC');
+    $mobil->update(['status' => 'disewa']);
+    $completed = createAdminTestReservation(
+        $customer,
+        $mobil,
+        today()->subDays(2)->toDateString(),
+        today()->toDateString(),
+        'disetujui',
+    );
+    createAdminTestReservation(
+        $customer,
+        $mobil,
+        today()->toDateString(),
+        today()->addDays(2)->toDateString(),
+        'disetujui',
+    );
+
+    $this->actingAs($admin)
+        ->post(route('admin.reservasi.complete', $completed))
+        ->assertRedirect(route('admin.reservasi.index'));
+
+    $this->assertDatabaseHas('reservasis', [
+        'id' => $completed->id,
+        'status' => 'selesai',
+    ]);
+    expect($mobil->fresh()->status)->toBe('disewa');
+});
+
+test('completing a reservation does not keep the car rented for a future approved reservation', function () {
+    $admin = adminReservasiUser('admin');
+    $customer = adminReservasiUser('pelanggan');
+    $mobil = adminReservasiMobil('DD 6796 AD');
+    $mobil->update(['status' => 'disewa']);
+    $completed = createAdminTestReservation(
+        $customer,
+        $mobil,
+        today()->subDays(2)->toDateString(),
+        today()->toDateString(),
+        'disetujui',
+    );
+    createAdminTestReservation(
+        $customer,
+        $mobil,
+        today()->addDays(3)->toDateString(),
+        today()->addDays(5)->toDateString(),
+        'disetujui',
+    );
+
+    $this->actingAs($admin)
+        ->post(route('admin.reservasi.complete', $completed))
+        ->assertRedirect(route('admin.reservasi.index'));
+
+    expect($mobil->fresh()->status)->toBe('tersedia');
+});
+
+test('completing an active reservation ignores a future approved reservation when syncing the operational status', function () {
+    $admin = adminReservasiUser('admin');
+    $customer = adminReservasiUser('pelanggan');
+    $mobil = adminReservasiMobil('DD 6796 AE');
+    $mobil->update(['status' => 'disewa']);
+    $completed = createAdminTestReservation(
+        $customer,
+        $mobil,
+        today()->subDays(1)->toDateString(),
+        today()->toDateString(),
+        'disetujui',
+    );
+    createAdminTestReservation(
+        $customer,
+        $mobil,
+        today()->addDays(2)->toDateString(),
+        today()->addDays(4)->toDateString(),
+        'disetujui',
+    );
+
+    $this->actingAs($admin)
+        ->post(route('admin.reservasi.complete', $completed))
+        ->assertRedirect(route('admin.reservasi.index'));
+
+    expect($mobil->fresh()->status)->toBe('tersedia');
 });
 
 test('an approved reservation cannot be completed before its end date', function () {

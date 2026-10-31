@@ -2,7 +2,7 @@
 
 use App\Models\Mobil;
 use App\Models\User;
-use App\Services\ItemBasedRecommendationService;
+use App\Services\UserBasedRecommendationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
@@ -47,7 +47,7 @@ test('administrators cannot access recommendations', function () {
 test('authenticated customer sees the empty recommendation state', function () {
     $customer = rekomendasiCreatePelanggan();
 
-    $this->mock(ItemBasedRecommendationService::class)
+    $this->mock(UserBasedRecommendationService::class)
         ->shouldReceive('recommendForUser')
         ->once()
         ->with($customer->id)
@@ -69,7 +69,7 @@ test('available cars preserve recommendation ranking and unavailable cars are hi
     ]);
     $second = rekomendasiCreateMobil(['nama_mobil' => 'Mobil Ranking Kedua']);
 
-    $this->mock(ItemBasedRecommendationService::class)
+    $this->mock(UserBasedRecommendationService::class)
         ->shouldReceive('recommendForUser')
         ->once()
         ->with($customer->id)

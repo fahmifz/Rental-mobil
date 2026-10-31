@@ -41,7 +41,7 @@ class ReservasiController extends Controller
     public function create(): View
     {
         $mobils = Mobil::query()
-            ->where('status', 'tersedia')
+            ->whereIn('status', ['tersedia', 'disewa'])
             ->orderBy('nama_mobil')
             ->get();
 
@@ -60,7 +60,7 @@ class ReservasiController extends Controller
                 ->lockForUpdate()
                 ->findOrFail($data['mobil_id']);
 
-            if ($mobil->status !== 'tersedia') {
+            if (! in_array($mobil->status, ['tersedia', 'disewa'], true)) {
                 throw ValidationException::withMessages([
                     'mobil_id' => 'Mobil ini tidak tersedia untuk reservasi.',
                 ]);

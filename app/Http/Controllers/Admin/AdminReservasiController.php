@@ -38,6 +38,10 @@ class AdminReservasiController extends Controller
     public function complete(Reservasi $reservasi): RedirectResponse
     {
         DB::transaction(function () use ($reservasi): void {
+            $mobil = Mobil::query()
+                ->lockForUpdate()
+                ->findOrFail($reservasi->mobil_id);
+
             $lockedReservasi = Reservasi::query()
                 ->lockForUpdate()
                 ->findOrFail($reservasi->id);
@@ -55,6 +59,7 @@ class AdminReservasiController extends Controller
             }
 
             $lockedReservasi->update(['status' => 'selesai']);
+            $mobil->syncOperationalStatus(today());
         });
 
         return redirect()
@@ -80,6 +85,18 @@ class AdminReservasiController extends Controller
             }
 
             if ($status === 'disetujui') {
+                if ($lockedReservasi->tanggal_selesai->isBefore(today())) {
+                    throw ValidationException::withMessages([
+                        'reservasi' => 'Reservasi yang tanggal selesai sewanya sudah lewat tidak dapat disetujui.',
+                    ]);
+                }
+
+                if ($mobil->status === 'perawatan') {
+                    throw ValidationException::withMessages([
+                        'reservasi' => 'Mobil yang sedang dalam perawatan tidak dapat disetujui untuk disewa.',
+                    ]);
+                }
+
                 $hasConflict = $mobil->reservasis()
                     ->where('id', '!=', $lockedReservasi->id)
                     ->whereIn('status', ['menunggu_konfirmasi', 'disetujui'])
@@ -92,6 +109,14 @@ class AdminReservasiController extends Controller
                         'reservasi' => 'Jadwal mobil bertabrakan dengan reservasi lain yang masih aktif.',
                     ]);
                 }
+
+                $lockedReservasi->update(['status' => $status]);
+
+                if ($lockedReservasi->isActiveOn(today())) {
+                    $mobil->syncOperationalStatus(today());
+                }
+
+                return;
             }
 
             $lockedReservasi->update(['status' => $status]);

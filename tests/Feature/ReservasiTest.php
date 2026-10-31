@@ -3,6 +3,7 @@
 use App\Models\Mobil;
 use App\Models\Reservasi;
 use App\Models\User;
+use Illuminate\Support\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
@@ -27,6 +28,30 @@ function reservasiPelanggan(): User
 
     return $user;
 }
+
+test('application uses the Makassar timezone', function () {
+    expect(config('app.timezone'))->toBe('Asia/Makassar');
+});
+
+test('today follows Makassar time when the UTC date is still yesterday', function () {
+    try {
+        Carbon::setTestNow(Carbon::create(
+            2026,
+            11,
+            2,
+            1,
+            0,
+            0,
+            'Asia/Makassar',
+        ));
+
+        expect(now()->timezoneName)->toBe('Asia/Makassar')
+            ->and(now()->utc()->toDateTimeString())->toBe('2026-11-01 17:00:00')
+            ->and(today()->toDateString())->toBe('2026-11-02');
+    } finally {
+        Carbon::setTestNow();
+    }
+});
 
 test('a customer can create a reservation using the database rate and own account', function () {
     $customer = reservasiPelanggan();
@@ -68,6 +93,55 @@ test('a customer can view the reservation form with available cars and database 
         ->assertSee('Buat Reservasi')
         ->assertSee('Toyota Avanza')
         ->assertSee('data-rate="275000.00"', false);
+});
+
+test('a rented car can be reserved for a future period without a conflict', function () {
+    $customer = reservasiPelanggan();
+    $mobil = reservasiMobil(['status' => 'disewa']);
+
+    $this->actingAs($customer)
+        ->get(route('reservasi.create'))
+        ->assertOk()
+        ->assertSee('Toyota Avanza');
+
+    $response = $this->actingAs($customer)
+        ->post(route('reservasi.store'), [
+            'mobil_id' => $mobil->id,
+            'tanggal_mulai' => today()->addDays(5)->toDateString(),
+            'tanggal_selesai' => today()->addDays(7)->toDateString(),
+        ]);
+
+    $reservasi = Reservasi::query()->firstOrFail();
+
+    $response->assertRedirect(route('reservasi.show', $reservasi));
+
+    expect($reservasi->status)->toBe('menunggu_konfirmasi')
+        ->and($reservasi->mobil_id)->toBe($mobil->id)
+        ->and((float) $reservasi->total_biaya)->toBe(1050000.0)
+        ->and($mobil->fresh()->status)->toBe('disewa');
+});
+
+test('a maintenance car cannot be shown or reserved', function () {
+    $customer = reservasiPelanggan();
+    $mobil = reservasiMobil(['status' => 'perawatan']);
+
+    $this->actingAs($customer)
+        ->get(route('reservasi.create'))
+        ->assertOk()
+        ->assertDontSee('Toyota Avanza');
+
+    $this->actingAs($customer)
+        ->from(route('reservasi.create'))
+        ->post(route('reservasi.store'), [
+            'mobil_id' => $mobil->id,
+            'tanggal_mulai' => today()->addDays(5)->toDateString(),
+            'tanggal_selesai' => today()->addDays(7)->toDateString(),
+        ])
+        ->assertRedirect(route('reservasi.create'))
+        ->assertSessionHasErrors('mobil_id');
+
+    expect(Reservasi::query()->count())->toBe(0)
+        ->and($mobil->fresh()->status)->toBe('perawatan');
 });
 
 test('reservation dates cannot start in the past or end before they start', function () {

@@ -34,7 +34,8 @@ class MenuHelper
             [
                 'icon' => 'ecommerce',
                 'name' => 'Pembayaran',
-                'available' => false,
+                'path' => '/admin/pembayaran',
+                'route' => 'admin.pembayaran.index',
             ],
             [
                 'icon' => 'task',

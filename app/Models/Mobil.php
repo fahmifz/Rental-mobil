@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -50,5 +51,22 @@ class Mobil extends Model
     public function ratings(): HasMany
     {
         return $this->hasMany(Rating::class);
+    }
+
+    public function syncOperationalStatus(CarbonInterface $date): void
+    {
+        if ($this->status === 'perawatan') {
+            return;
+        }
+
+        $hasActiveApprovedReservation = $this->reservasis()
+            ->where('status', 'disetujui')
+            ->whereDate('tanggal_mulai', '<=', $date->toDateString())
+            ->whereDate('tanggal_selesai', '>=', $date->toDateString())
+            ->exists();
+
+        $this->update([
+            'status' => $hasActiveApprovedReservation ? 'disewa' : 'tersedia',
+        ]);
     }
 }

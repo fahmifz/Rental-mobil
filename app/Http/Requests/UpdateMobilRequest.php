@@ -33,4 +33,37 @@ class UpdateMobilRequest extends FormRequest
             'status' => ['required', Rule::in(['tersedia', 'disewa', 'perawatan'])],
         ];
     }
+
+    public function withValidator($validator): void
+    {
+        $validator->after(function ($validator): void {
+            /** @var Mobil|null $mobil */
+            $mobil = $this->route('mobil');
+
+            if (! $mobil instanceof Mobil) {
+                return;
+            }
+
+            $status = (string) $this->input('status');
+            $hasActiveApprovedReservation = $mobil->reservasis()
+                ->where('status', 'disetujui')
+                ->whereDate('tanggal_mulai', '<=', today()->toDateString())
+                ->whereDate('tanggal_selesai', '>=', today()->toDateString())
+                ->exists();
+
+            if ($status === 'tersedia' && $hasActiveApprovedReservation) {
+                $validator->errors()->add(
+                    'status',
+                    'Mobil dengan reservasi aktif tidak dapat diubah menjadi tersedia.'
+                );
+            }
+
+            if ($status === 'disewa' && ! $hasActiveApprovedReservation) {
+                $validator->errors()->add(
+                    'status',
+                    'Mobil hanya dapat berstatus disewa jika memiliki reservasi aktif.'
+                );
+            }
+        });
+    }
 }

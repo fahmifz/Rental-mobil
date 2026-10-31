@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Pelanggan;
 
 use App\Http\Controllers\Controller;
 use App\Models\Mobil;
-use App\Services\ItemBasedRecommendationService;
+use App\Services\UserBasedRecommendationService;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -12,7 +12,7 @@ class RekomendasiController extends Controller
 {
     public function index(
         Request $request,
-        ItemBasedRecommendationService $recommendationService
+        UserBasedRecommendationService $recommendationService
     ): View {
         $recommendations = $recommendationService->recommendForUser(
             $request->user()->id

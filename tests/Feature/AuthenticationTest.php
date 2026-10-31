@@ -119,3 +119,70 @@ test('TailAdmin utility pages are restricted to administrators', function () {
     $this->actingAs($admin)->get(route('calendar'))->assertOk();
     $this->actingAs($admin)->get(route('profile'))->assertOk();
 });
+
+test('an admin can view their own profile data', function () {
+    $admin = User::factory()->create([
+        'name' => 'Admin Awal Putra',
+        'email' => 'admin@awalputra.test',
+        'role' => 'admin',
+    ]);
+
+    $this->actingAs($admin)
+        ->get(route('profile'))
+        ->assertOk()
+        ->assertSee('Admin Awal Putra')
+        ->assertSee('admin@awalputra.test');
+});
+
+test('an admin can update their profile without changing their role', function () {
+    $admin = User::factory()->create([
+        'name' => 'Admin Lama',
+        'email' => 'admin-lama@awalputra.test',
+        'role' => 'admin',
+    ]);
+
+    $this->actingAs($admin)
+        ->put(route('profile.update'), [
+            'name' => 'Admin Baru',
+            'email' => $admin->email,
+            'role' => 'pelanggan',
+        ])
+        ->assertRedirect(route('profile'))
+        ->assertSessionHas('success', 'Profil berhasil diperbarui.');
+
+    $admin->refresh();
+
+    expect($admin->name)->toBe('Admin Baru');
+    expect($admin->email)->toBe('admin-lama@awalputra.test');
+    expect($admin->role)->toBe('admin');
+});
+
+test('a profile email must be unique except for the current user', function () {
+    $admin = User::factory()->create([
+        'role' => 'admin',
+        'email' => 'admin@awalputra.test',
+    ]);
+    User::factory()->create([
+        'role' => 'pelanggan',
+        'email' => 'digunakan@awalputra.test',
+    ]);
+
+    $this->actingAs($admin)
+        ->from(route('profile'))
+        ->put(route('profile.update'), [
+            'name' => 'Admin Awal Putra',
+            'email' => 'digunakan@awalputra.test',
+        ])
+        ->assertRedirect(route('profile'))
+        ->assertSessionHasErrors('email');
+
+    expect($admin->fresh()->email)->toBe('admin@awalputra.test');
+
+    $this->actingAs($admin)
+        ->put(route('profile.update'), [
+            'name' => 'Admin Awal Putra',
+            'email' => 'admin@awalputra.test',
+        ])
+        ->assertSessionHasNoErrors()
+        ->assertRedirect(route('profile'));
+});
