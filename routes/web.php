@@ -35,6 +35,7 @@ Route::middleware(['auth', 'role:pelanggan'])->group(function (): void {
     Route::get('/reservasi', [ReservasiController::class, 'index'])->name('reservasi.index');
     Route::get('/reservasi/buat', [ReservasiController::class, 'create'])->name('reservasi.create');
     Route::post('/reservasi', [ReservasiController::class, 'store'])->name('reservasi.store');
+    Route::post('/reservasi/{reservasi}/batal', [ReservasiController::class, 'cancel'])->name('reservasi.cancel');
     Route::post('/reservasi/{reservasi}/rating', [ReservasiController::class, 'storeRating'])->name('reservasi.rating.store');
     Route::get('/reservasi/{reservasi}', [ReservasiController::class, 'show'])->name('reservasi.show');
 });
@@ -61,6 +62,8 @@ Route::middleware(['auth', 'role:admin'])->group(function (): void {
         ->name('admin.reservasi.approve');
     Route::post('/admin/reservasi/{reservasi}/tolak', [AdminReservasiController::class, 'reject'])
         ->name('admin.reservasi.reject');
+    Route::post('/admin/reservasi/{reservasi}/batal', [AdminReservasiController::class, 'cancel'])
+        ->name('admin.reservasi.cancel');
     Route::post('/admin/reservasi/{reservasi}/selesaikan', [AdminReservasiController::class, 'complete'])
         ->name('admin.reservasi.complete');
 

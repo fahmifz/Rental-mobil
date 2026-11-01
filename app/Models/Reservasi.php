@@ -85,6 +85,18 @@ class Reservasi extends Model
             && !$this->tanggal_selesai->isAfter(today());
     }
 
+    public function canBeCancelledByCustomer(): bool
+    {
+        return in_array($this->status, ['menunggu_konfirmasi', 'disetujui'], true)
+            && $this->tanggal_mulai->isAfter(today())
+            && ! $this->pembayarans()->exists();
+    }
+
+    public function canBeCancelledByAdmin(): bool
+    {
+        return in_array($this->status, ['menunggu_konfirmasi', 'disetujui'], true);
+    }
+
     public function isActiveOn(CarbonInterface $date): bool
     {
         return $this->status === 'disetujui'

@@ -35,6 +35,32 @@ class AdminReservasiController extends Controller
         return $this->updatePendingReservation($reservasi, 'ditolak');
     }
 
+    public function cancel(Reservasi $reservasi): RedirectResponse
+    {
+        DB::transaction(function () use ($reservasi): void {
+            $mobil = Mobil::query()
+                ->lockForUpdate()
+                ->findOrFail($reservasi->mobil_id);
+
+            $lockedReservasi = Reservasi::query()
+                ->lockForUpdate()
+                ->findOrFail($reservasi->id);
+
+            if (! in_array($lockedReservasi->status, ['menunggu_konfirmasi', 'disetujui'], true)) {
+                throw ValidationException::withMessages([
+                    'reservasi' => 'Reservasi dengan status ' . ucwords(str_replace('_', ' ', $lockedReservasi->status)) . ' tidak dapat dibatalkan.',
+                ]);
+            }
+
+            $lockedReservasi->update(['status' => 'dibatalkan']);
+            $mobil->syncOperationalStatus(today());
+        });
+
+        return redirect()
+            ->route('admin.reservasi.index')
+            ->with('success', 'Reservasi berhasil dibatalkan.');
+    }
+
     public function complete(Reservasi $reservasi): RedirectResponse
     {
         DB::transaction(function () use ($reservasi): void {

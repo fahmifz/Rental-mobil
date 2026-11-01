@@ -98,6 +98,49 @@ class ReservasiController extends Controller
             ->with('success', 'Reservasi berhasil dikirim dan menunggu konfirmasi.');
     }
 
+    public function cancel(Request $request, int $reservasi): RedirectResponse
+    {
+        DB::transaction(function () use ($request, $reservasi): void {
+            $userReservasi = $request->user()
+                ->reservasis()
+                ->findOrFail($reservasi);
+
+            $mobil = Mobil::query()
+                ->lockForUpdate()
+                ->findOrFail($userReservasi->mobil_id);
+
+            $lockedReservasi = $request->user()
+                ->reservasis()
+                ->lockForUpdate()
+                ->findOrFail($reservasi);
+
+            if (! in_array($lockedReservasi->status, ['menunggu_konfirmasi', 'disetujui'], true)) {
+                throw ValidationException::withMessages([
+                    'reservasi' => 'Reservasi ini tidak dapat dibatalkan.',
+                ]);
+            }
+
+            if (! $lockedReservasi->tanggal_mulai->isAfter(today())) {
+                throw ValidationException::withMessages([
+                    'reservasi' => 'Reservasi hanya dapat dibatalkan sebelum tanggal mulai sewa.',
+                ]);
+            }
+
+            if ($lockedReservasi->pembayarans()->exists()) {
+                throw ValidationException::withMessages([
+                    'reservasi' => 'Reservasi yang sudah memiliki transaksi pembayaran tidak dapat dibatalkan.',
+                ]);
+            }
+
+            $lockedReservasi->update(['status' => 'dibatalkan']);
+            $mobil->syncOperationalStatus(today());
+        });
+
+        return redirect()
+            ->route('reservasi.show', $reservasi)
+            ->with('success', 'Reservasi berhasil dibatalkan.');
+    }
+
     public function storeRating(StoreRatingRequest $request, int $reservasi): RedirectResponse
     {
         DB::transaction(function () use ($request, $reservasi): void {

@@ -52,6 +52,17 @@
                 </div>
             </dl>
 
+            @if ($reservasi->canBeCancelledByCustomer())
+                <div class="mt-6 border-t border-gray-100 pt-6 dark:border-gray-800">
+                    <form action="{{ route('reservasi.cancel', $reservasi) }}" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin membatalkan reservasi ini?')">
+                        @csrf
+                        <button type="submit" class="inline-flex items-center justify-center rounded-lg bg-error-50 px-4 py-2.5 text-theme-sm font-medium text-error-700 transition hover:bg-error-100 dark:bg-error-500/15 dark:text-error-400 dark:hover:bg-error-500/25">
+                            Batalkan Reservasi
+                        </button>
+                    </form>
+                </div>
+            @endif
+
             @if ($reservasi->rating)
                 <div class="mt-6 rounded-xl border border-success-200 bg-success-50 px-4 py-4 dark:border-success-500/20 dark:bg-success-500/15">
                     <p class="text-theme-sm font-medium text-success-700 dark:text-success-400">Reservasi sudah dinilai</p>

@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Mobil;
+use App\Models\Pembayaran;
 use App\Models\Reservasi;
 use App\Models\User;
 use Illuminate\Support\Carbon;
@@ -256,4 +257,207 @@ test('only customers can access customer reservation routes', function () {
     $this->actingAs($admin)
         ->post(route('reservasi.store'), [])
         ->assertForbidden();
+});
+
+test('a customer can cancel their pending reservation before start date with no payments', function () {
+    $customer = reservasiPelanggan();
+    $mobil = reservasiMobil();
+    $reservasi = $customer->reservasis()->create([
+        'mobil_id' => $mobil->id,
+        'tanggal_mulai' => today()->addDays(2),
+        'tanggal_selesai' => today()->addDays(4),
+        'durasi_sewa' => 3,
+        'tarif_harian' => 350000,
+        'total_biaya' => 1050000,
+        'status' => 'menunggu_konfirmasi',
+    ]);
+
+    $response = $this->actingAs($customer)
+        ->post(route('reservasi.cancel', $reservasi));
+
+    $response->assertRedirect(route('reservasi.show', $reservasi))
+        ->assertSessionHas('success', 'Reservasi berhasil dibatalkan.');
+
+    expect($reservasi->fresh()->status)->toBe('dibatalkan')
+        ->and($mobil->fresh()->status)->toBe('tersedia');
+});
+
+test('a customer can cancel their approved reservation before start date with no payments', function () {
+    $customer = reservasiPelanggan();
+    $mobil = reservasiMobil();
+    $reservasi = $customer->reservasis()->create([
+        'mobil_id' => $mobil->id,
+        'tanggal_mulai' => today()->addDays(3),
+        'tanggal_selesai' => today()->addDays(5),
+        'durasi_sewa' => 3,
+        'tarif_harian' => 350000,
+        'total_biaya' => 1050000,
+        'status' => 'disetujui',
+    ]);
+
+    $response = $this->actingAs($customer)
+        ->post(route('reservasi.cancel', $reservasi));
+
+    $response->assertRedirect(route('reservasi.show', $reservasi))
+        ->assertSessionHas('success', 'Reservasi berhasil dibatalkan.');
+
+    expect($reservasi->fresh()->status)->toBe('dibatalkan');
+});
+
+test('a customer cannot cancel a reservation on or after start date', function () {
+    $customer = reservasiPelanggan();
+    $mobil = reservasiMobil();
+    $reservasiToday = $customer->reservasis()->create([
+        'mobil_id' => $mobil->id,
+        'tanggal_mulai' => today(),
+        'tanggal_selesai' => today()->addDays(2),
+        'durasi_sewa' => 3,
+        'tarif_harian' => 350000,
+        'total_biaya' => 1050000,
+        'status' => 'menunggu_konfirmasi',
+    ]);
+
+    $this->actingAs($customer)
+        ->from(route('reservasi.show', $reservasiToday))
+        ->post(route('reservasi.cancel', $reservasiToday))
+        ->assertRedirect(route('reservasi.show', $reservasiToday))
+        ->assertSessionHasErrors('reservasi');
+
+    expect($reservasiToday->fresh()->status)->toBe('menunggu_konfirmasi');
+});
+
+test('a customer cannot cancel a reservation that has recorded payments', function () {
+    $customer = reservasiPelanggan();
+    $mobil = reservasiMobil();
+    $reservasi = $customer->reservasis()->create([
+        'mobil_id' => $mobil->id,
+        'tanggal_mulai' => today()->addDays(2),
+        'tanggal_selesai' => today()->addDays(4),
+        'durasi_sewa' => 3,
+        'tarif_harian' => 350000,
+        'total_biaya' => 1050000,
+        'status' => 'disetujui',
+    ]);
+
+    Pembayaran::query()->create([
+        'reservasi_id' => $reservasi->id,
+        'nominal_pembayaran' => 350000,
+        'tanggal_pembayaran' => today()->toDateString(),
+        'metode_pembayaran' => 'tunai',
+        'status' => 'dibayar_sebagian',
+    ]);
+
+    $this->actingAs($customer)
+        ->from(route('reservasi.show', $reservasi))
+        ->post(route('reservasi.cancel', $reservasi))
+        ->assertRedirect(route('reservasi.show', $reservasi))
+        ->assertSessionHasErrors('reservasi');
+
+    expect($reservasi->fresh()->status)->toBe('disetujui');
+});
+
+test('a customer cannot cancel completed, rejected, or already cancelled reservations', function () {
+    $customer = reservasiPelanggan();
+    $mobil = reservasiMobil();
+
+    foreach (['selesai', 'ditolak', 'dibatalkan'] as $status) {
+        $reservasi = $customer->reservasis()->create([
+            'mobil_id' => $mobil->id,
+            'tanggal_mulai' => today()->addDays(2),
+            'tanggal_selesai' => today()->addDays(4),
+            'durasi_sewa' => 3,
+            'tarif_harian' => 350000,
+            'total_biaya' => 1050000,
+            'status' => $status,
+        ]);
+
+        $this->actingAs($customer)
+            ->from(route('reservasi.show', $reservasi))
+            ->post(route('reservasi.cancel', $reservasi))
+            ->assertRedirect(route('reservasi.show', $reservasi))
+            ->assertSessionHasErrors('reservasi');
+
+        expect($reservasi->fresh()->status)->toBe($status);
+    }
+});
+
+test('a customer cannot cancel another customer reservation', function () {
+    $customer = reservasiPelanggan();
+    $otherCustomer = reservasiPelanggan();
+    $mobil = reservasiMobil();
+    $otherReservation = $otherCustomer->reservasis()->create([
+        'mobil_id' => $mobil->id,
+        'tanggal_mulai' => today()->addDays(2),
+        'tanggal_selesai' => today()->addDays(4),
+        'durasi_sewa' => 3,
+        'tarif_harian' => 350000,
+        'total_biaya' => 1050000,
+        'status' => 'menunggu_konfirmasi',
+    ]);
+
+    $this->actingAs($customer)
+        ->post(route('reservasi.cancel', $otherReservation))
+        ->assertNotFound();
+
+    expect($otherReservation->fresh()->status)->toBe('menunggu_konfirmasi');
+});
+
+test('guests and admins cannot access customer cancel endpoint', function () {
+    $customer = reservasiPelanggan();
+    $mobil = reservasiMobil();
+    $reservasi = $customer->reservasis()->create([
+        'mobil_id' => $mobil->id,
+        'tanggal_mulai' => today()->addDays(2),
+        'tanggal_selesai' => today()->addDays(4),
+        'durasi_sewa' => 3,
+        'tarif_harian' => 350000,
+        'total_biaya' => 1050000,
+        'status' => 'menunggu_konfirmasi',
+    ]);
+
+    $this->post(route('reservasi.cancel', $reservasi))
+        ->assertRedirect(route('login'));
+
+    $admin = User::factory()->create();
+    $admin->role = 'admin';
+    $admin->save();
+
+    $this->actingAs($admin)
+        ->post(route('reservasi.cancel', $reservasi))
+        ->assertForbidden();
+});
+
+test('customer detail page displays cancel button only when eligible', function () {
+    $customer = reservasiPelanggan();
+    $mobil = reservasiMobil();
+
+    $eligibleReservation = $customer->reservasis()->create([
+        'mobil_id' => $mobil->id,
+        'tanggal_mulai' => today()->addDays(2),
+        'tanggal_selesai' => today()->addDays(4),
+        'durasi_sewa' => 3,
+        'tarif_harian' => 350000,
+        'total_biaya' => 1050000,
+        'status' => 'menunggu_konfirmasi',
+    ]);
+
+    $this->actingAs($customer)
+        ->get(route('reservasi.show', $eligibleReservation))
+        ->assertOk()
+        ->assertSee('Batalkan Reservasi');
+
+    $ineligibleReservation = $customer->reservasis()->create([
+        'mobil_id' => $mobil->id,
+        'tanggal_mulai' => today()->subDays(2),
+        'tanggal_selesai' => today()->subDay(),
+        'durasi_sewa' => 2,
+        'tarif_harian' => 350000,
+        'total_biaya' => 700000,
+        'status' => 'dibatalkan',
+    ]);
+
+    $this->actingAs($customer)
+        ->get(route('reservasi.show', $ineligibleReservation))
+        ->assertOk()
+        ->assertDontSee('Batalkan Reservasi');
 });
