@@ -4,6 +4,7 @@ use App\Http\Controllers\Admin\AdminReservasiController;
 use App\Http\Controllers\Admin\KategoriMobilController;
 use App\Http\Controllers\Admin\MobilController;
 use App\Http\Controllers\Admin\PembayaranController;
+use App\Http\Controllers\Admin\PengembalianController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\LocaleController;
@@ -66,6 +67,15 @@ Route::middleware(['auth', 'role:admin'])->group(function (): void {
         ->name('admin.reservasi.cancel');
     Route::post('/admin/reservasi/{reservasi}/selesaikan', [AdminReservasiController::class, 'complete'])
         ->name('admin.reservasi.complete');
+
+    Route::get('/admin/pengembalian', [PengembalianController::class, 'index'])
+        ->name('admin.pengembalian.index');
+    Route::get('/admin/pengembalian/reservasi/{reservasi}', [PengembalianController::class, 'show'])
+        ->name('admin.pengembalian.show');
+    Route::get('/admin/pengembalian/reservasi/{reservasi}/create', [PengembalianController::class, 'create'])
+        ->name('admin.pengembalian.create');
+    Route::post('/admin/pengembalian/reservasi/{reservasi}', [PengembalianController::class, 'store'])
+        ->name('admin.pengembalian.store');
 
     Route::resource('kategori-mobil', KategoriMobilController::class)->except('show');
     Route::resource('mobil', MobilController::class)->except('show');

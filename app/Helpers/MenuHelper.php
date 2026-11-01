@@ -40,7 +40,8 @@ class MenuHelper
             [
                 'icon' => 'task',
                 'name' => 'Pengembalian',
-                'available' => false,
+                'path' => '/admin/pengembalian',
+                'route' => 'admin.pengembalian.index',
             ],
             [
                 'icon' => 'user-profile',

@@ -47,6 +47,11 @@ class Reservasi extends Model
         return $this->hasOne(Rating::class);
     }
 
+    public function pengembalian(): HasOne
+    {
+        return $this->hasOne(Pengembalian::class);
+    }
+
     public function pembayarans(): HasMany
     {
         return $this->hasMany(Pembayaran::class)->latest('tanggal_pembayaran')->latest('id');
@@ -95,6 +100,11 @@ class Reservasi extends Model
     public function canBeCancelledByAdmin(): bool
     {
         return in_array($this->status, ['menunggu_konfirmasi', 'disetujui'], true);
+    }
+
+    public function canBeReturned(): bool
+    {
+        return $this->status === 'disetujui' && !$this->pengembalian()->exists();
     }
 
     public function isActiveOn(CarbonInterface $date): bool
