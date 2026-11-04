@@ -38,6 +38,14 @@
                             <dd class="font-semibold text-gray-900 dark:text-white">Rp{{ number_format((float) $reservasi->total_biaya, 0, ',', '.') }}</dd>
                         </div>
                         <div class="flex justify-between py-2 text-theme-sm">
+                            <dt class="text-gray-500 dark:text-gray-400">Total Kewajiban Pembayaran</dt>
+                            <dd class="font-semibold text-gray-900 dark:text-white">Rp{{ number_format($reservasi->totalAmountDue(), 0, ',', '.') }}</dd>
+                        </div>
+                        <div class="flex justify-between py-2 text-theme-sm">
+                            <dt class="text-gray-500 dark:text-gray-400">Sisa Tagihan</dt>
+                            <dd class="font-semibold text-brand-700 dark:text-brand-300">Rp{{ number_format($reservasi->remainingAmount(), 0, ',', '.') }}</dd>
+                        </div>
+                        <div class="flex justify-between py-2 text-theme-sm">
                             <dt class="text-gray-500 dark:text-gray-400">Status Pembayaran</dt>
                             <dd>
                                 @php

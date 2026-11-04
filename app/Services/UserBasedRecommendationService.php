@@ -36,19 +36,14 @@ class UserBasedRecommendationService
         $normB = 0.0;
         $shared = 0;
 
-        foreach ($vectorA as $valueA) {
-            $valueA = (float) $valueA;
-            $normA += $valueA * $valueA;
-        }
-
-        foreach ($vectorB as $valueB) {
-            $valueB = (float) $valueB;
-            $normB += $valueB * $valueB;
-        }
-
         foreach ($vectorA as $dimension => $valueA) {
             if (array_key_exists($dimension, $vectorB)) {
-                $dotProduct += (float) $valueA * (float) $vectorB[$dimension];
+                $valueA = (float) $valueA;
+                $valueB = (float) $vectorB[$dimension];
+
+                $dotProduct += $valueA * $valueB;
+                $normA += $valueA * $valueA;
+                $normB += $valueB * $valueB;
                 $shared++;
             }
         }

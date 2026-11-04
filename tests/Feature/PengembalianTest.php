@@ -69,7 +69,7 @@ test('an admin can view the return management page with waiting reservations', f
         ->assertSee(route('admin.pengembalian.create', $reservasi));
 });
 
-test('a valid approved reservation can be returned on time without late penalty', function () {
+test('saving a return is the only completion path for an approved reservation', function () {
     $admin = pengembalianUser('admin');
     $customer = pengembalianUser('pelanggan');
     $mobil = pengembalianMobil('DD 9002 RET', 'disewa');
@@ -81,7 +81,7 @@ test('a valid approved reservation can be returned on time without late penalty'
         'disetujui'
     );
 
-    $returnTime = today()->setTime(15, 30)->toDateTimeString();
+    $returnTime = now()->subMinute()->toDateTimeString();
 
     $response = $this->actingAs($admin)
         ->post(route('admin.pengembalian.store', $reservasi), [

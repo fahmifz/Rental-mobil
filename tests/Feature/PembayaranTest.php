@@ -2,6 +2,7 @@
 
 use App\Models\Mobil;
 use App\Models\Pembayaran;
+use App\Models\Pengembalian;
 use App\Models\Reservasi;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -54,6 +55,19 @@ function pembayaranPayload(float $nominal, string $metode = 'tunai'): array
         'metode_pembayaran' => $metode,
         'catatan' => 'Dicatat melalui loket rental',
     ];
+}
+
+function pembayaranDenda(Reservasi $reservasi, float $totalDenda): Pengembalian
+{
+    return Pengembalian::query()->create([
+        'reservasi_id' => $reservasi->id,
+        'tanggal_pengembalian' => now()->subMinute(),
+        'kondisi_mobil' => 'baik',
+        'durasi_keterlambatan' => 1,
+        'tarif_denda_per_hari' => $totalDenda,
+        'total_denda' => $totalDenda,
+        'status_mobil_setelah_kembali' => 'tersedia',
+    ]);
 }
 
 test('an admin can view the manual payment list', function () {
@@ -177,6 +191,112 @@ test('a completed reservation with outstanding balance can be paid and a fully p
 
     $payment = Pembayaran::query()->where('reservasi_id', $paid->id)->firstOrFail();
     expect($payment->status)->toBe('lunas');
+});
+
+test('a completed reservation without late fee remains payable only for its rental cost', function () {
+    $admin = pembayaranUser('admin');
+    $customer = pembayaranUser('pelanggan');
+    $reservasi = pembayaranReservasi(
+        $customer,
+        pembayaranMobil('DD 8014 PAY', 'tersedia'),
+        'selesai',
+    );
+
+    expect($reservasi->lateFeeAmount())->toBe(0.0)
+        ->and($reservasi->totalAmountDue())->toBe(700000.0)
+        ->and($reservasi->remainingAmount())->toBe(700000.0)
+        ->and($reservasi->paymentStatus())->toBe('belum_dibayar');
+
+    $this->actingAs($admin)
+        ->post(route('admin.pembayaran.store', $reservasi), pembayaranPayload(700000))
+        ->assertRedirect(route('admin.pembayaran.show', $reservasi));
+
+    expect($reservasi->totalPaid())->toBe(700000.0)
+        ->and($reservasi->remainingAmount())->toBe(0.0)
+        ->and($reservasi->paymentStatus())->toBe('lunas');
+});
+
+test('an unpaid late fee is added to the completed reservation payment obligation', function () {
+    $admin = pembayaranUser('admin');
+    $customer = pembayaranUser('pelanggan');
+    $reservasi = pembayaranReservasi(
+        $customer,
+        pembayaranMobil('DD 8015 PAY', 'tersedia'),
+        'selesai',
+    );
+    pembayaranDenda($reservasi, 100000);
+
+    expect($reservasi->lateFeeAmount())->toBe(100000.0)
+        ->and($reservasi->totalAmountDue())->toBe(800000.0)
+        ->and($reservasi->remainingAmount())->toBe(800000.0)
+        ->and($reservasi->paymentStatus())->toBe('belum_dibayar')
+        ->and($reservasi->fresh()->status)->toBe('selesai');
+
+    $this->actingAs($admin)
+        ->get(route('admin.pembayaran.show', $reservasi))
+        ->assertOk()
+        ->assertSee('Biaya sewa')
+        ->assertSee('Denda keterlambatan')
+        ->assertSee('800.000');
+
+    $this->actingAs($customer)
+        ->get(route('reservasi.show', $reservasi))
+        ->assertOk()
+        ->assertSee('Denda keterlambatan')
+        ->assertSee('100.000')
+        ->assertSee('Total kewajiban pembayaran');
+});
+
+test('a rental payment remains intact and becomes partial when a late fee is recorded', function () {
+    $customer = pembayaranUser('pelanggan');
+    $reservasi = pembayaranReservasi(
+        $customer,
+        pembayaranMobil('DD 8016 PAY', 'tersedia'),
+        'selesai',
+    );
+    $rentalPayment = Pembayaran::query()->create([
+        'reservasi_id' => $reservasi->id,
+        'nominal_pembayaran' => 700000,
+        'tanggal_pembayaran' => today()->toDateString(),
+        'metode_pembayaran' => 'transfer',
+        'status' => 'lunas',
+    ]);
+
+    pembayaranDenda($reservasi, 100000);
+
+    expect($rentalPayment->fresh()->nominal_pembayaran)->toBe('700000.00')
+        ->and($reservasi->totalPaid())->toBe(700000.0)
+        ->and($reservasi->totalAmountDue())->toBe(800000.0)
+        ->and($reservasi->remainingAmount())->toBe(100000.0)
+        ->and($reservasi->paymentStatus())->toBe('dibayar_sebagian');
+});
+
+test('an admin can settle the remaining late fee after the rental cost has been paid', function () {
+    $admin = pembayaranUser('admin');
+    $customer = pembayaranUser('pelanggan');
+    $reservasi = pembayaranReservasi(
+        $customer,
+        pembayaranMobil('DD 8017 PAY', 'tersedia'),
+        'selesai',
+    );
+    Pembayaran::query()->create([
+        'reservasi_id' => $reservasi->id,
+        'nominal_pembayaran' => 700000,
+        'tanggal_pembayaran' => today()->toDateString(),
+        'metode_pembayaran' => 'tunai',
+        'status' => 'lunas',
+    ]);
+    pembayaranDenda($reservasi, 100000);
+
+    $this->actingAs($admin)
+        ->post(route('admin.pembayaran.store', $reservasi), pembayaranPayload(100000, 'transfer'))
+        ->assertRedirect(route('admin.pembayaran.show', $reservasi))
+        ->assertSessionHas('success');
+
+    expect(Pembayaran::query()->where('reservasi_id', $reservasi->id)->count())->toBe(2)
+        ->and($reservasi->totalPaid())->toBe(800000.0)
+        ->and($reservasi->remainingAmount())->toBe(0.0)
+        ->and($reservasi->paymentStatus())->toBe('lunas');
 });
 
 test('two transaction payments produce partial then paid status with separate history records', function () {

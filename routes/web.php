@@ -2,9 +2,12 @@
 
 use App\Http\Controllers\Admin\AdminReservasiController;
 use App\Http\Controllers\Admin\KategoriMobilController;
+use App\Http\Controllers\Admin\LaporanController;
 use App\Http\Controllers\Admin\MobilController;
 use App\Http\Controllers\Admin\PembayaranController;
+use App\Http\Controllers\Admin\PelangganController;
 use App\Http\Controllers\Admin\PengembalianController;
+use App\Http\Controllers\Admin\RefundController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\LocaleController;
@@ -65,8 +68,22 @@ Route::middleware(['auth', 'role:admin'])->group(function (): void {
         ->name('admin.reservasi.reject');
     Route::post('/admin/reservasi/{reservasi}/batal', [AdminReservasiController::class, 'cancel'])
         ->name('admin.reservasi.cancel');
-    Route::post('/admin/reservasi/{reservasi}/selesaikan', [AdminReservasiController::class, 'complete'])
-        ->name('admin.reservasi.complete');
+    Route::get('/admin/refund', [RefundController::class, 'index'])
+        ->name('admin.refund.index');
+    Route::get('/admin/refund/reservasi/{reservasi}/buat', [RefundController::class, 'create'])
+        ->name('admin.refund.create');
+    Route::get('/admin/refund/{refund}', [RefundController::class, 'show'])
+        ->name('admin.refund.show');
+    Route::post('/admin/refund/{refund}/konfirmasi', [RefundController::class, 'confirm'])
+        ->name('admin.refund.confirm');
+
+    Route::get('/admin/pelanggan', [PelangganController::class, 'index'])
+        ->name('admin.pelanggan.index');
+    Route::get('/admin/pelanggan/{pelanggan}', [PelangganController::class, 'show'])
+        ->name('admin.pelanggan.show');
+
+    Route::get('/admin/laporan', [LaporanController::class, 'index'])
+        ->name('admin.laporan.index');
 
     Route::get('/admin/pengembalian', [PengembalianController::class, 'index'])
         ->name('admin.pengembalian.index');

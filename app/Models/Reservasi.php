@@ -19,6 +19,9 @@ class Reservasi extends Model
         'tarif_harian',
         'total_biaya',
         'status',
+        'dibatalkan_pada',
+        'dibatalkan_oleh_id',
+        'alasan_pembatalan',
     ];
 
     protected function casts(): array
@@ -29,6 +32,7 @@ class Reservasi extends Model
             'durasi_sewa' => 'integer',
             'tarif_harian' => 'decimal:2',
             'total_biaya' => 'decimal:2',
+            'dibatalkan_pada' => 'datetime',
         ];
     }
 
@@ -52,6 +56,16 @@ class Reservasi extends Model
         return $this->hasOne(Pengembalian::class);
     }
 
+    public function refund(): HasOne
+    {
+        return $this->hasOne(Refund::class);
+    }
+
+    public function dibatalkanOleh(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'dibatalkan_oleh_id');
+    }
+
     public function pembayarans(): HasMany
     {
         return $this->hasMany(Pembayaran::class)->latest('tanggal_pembayaran')->latest('id');
@@ -67,27 +81,31 @@ class Reservasi extends Model
         return round((float) $this->pembayarans()->sum('nominal_pembayaran'), 2);
     }
 
+    public function lateFeeAmount(): float
+    {
+        return round((float) ($this->pengembalian?->total_denda ?? 0), 2);
+    }
+
+    public function totalAmountDue(): float
+    {
+        return round((float) $this->total_biaya + $this->lateFeeAmount(), 2);
+    }
+
     public function remainingAmount(): float
     {
-        return max(0, round((float) $this->total_biaya - $this->totalPaid(), 2));
+        return max(0, round($this->totalAmountDue() - $this->totalPaid(), 2));
     }
 
     public function paymentStatus(): string
     {
         $paid = $this->totalPaid();
-        $total = round((float) $this->total_biaya, 2);
+        $total = $this->totalAmountDue();
 
         if ($paid <= 0) {
             return 'belum_dibayar';
         }
 
         return $paid < $total ? 'dibayar_sebagian' : 'lunas';
-    }
-
-    public function canBeCompleted(): bool
-    {
-        return $this->status === 'disetujui'
-            && !$this->tanggal_selesai->isAfter(today());
     }
 
     public function canBeCancelledByCustomer(): bool

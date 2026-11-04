@@ -248,9 +248,6 @@ test('customers cannot access admin reservation status endpoints', function () {
     $this->actingAs($customer)
         ->post(route('admin.reservasi.reject', $reservasi))
         ->assertForbidden();
-    $this->actingAs($customer)
-        ->post(route('admin.reservasi.complete', $reservasi))
-        ->assertForbidden();
 
     $this->assertDatabaseHas('reservasis', [
         'id' => $reservasi->id,
@@ -313,11 +310,10 @@ test('a reservation ending on another reservation start date is considered a con
     ]);
 });
 
-test('an admin can complete an approved reservation on its end date', function () {
+test('approved reservations direct admins to return processing', function () {
     $admin = adminReservasiUser('admin');
     $customer = adminReservasiUser('pelanggan');
     $mobil = adminReservasiMobil('DD 6796 AB');
-    $mobil->update(['status' => 'disewa']);
     $reservasi = createAdminTestReservation(
         $customer,
         $mobil,
@@ -327,103 +323,14 @@ test('an admin can complete an approved reservation on its end date', function (
     );
 
     $this->actingAs($admin)
-        ->post(route('admin.reservasi.complete', $reservasi))
-        ->assertRedirect(route('admin.reservasi.index'))
-        ->assertSessionHas('success', 'Reservasi berhasil diselesaikan.');
-
-    $this->assertDatabaseHas('reservasis', [
-        'id' => $reservasi->id,
-        'status' => 'selesai',
-    ]);
-    expect($mobil->fresh()->status)->toBe('tersedia');
+        ->get(route('admin.reservasi.index'))
+        ->assertOk()
+        ->assertSee('Proses Pengembalian')
+        ->assertSee(route('admin.pengembalian.create', $reservasi))
+        ->assertDontSee('Selesaikan');
 });
 
-test('completing a reservation keeps the car rented while another reservation is active today', function () {
-    $admin = adminReservasiUser('admin');
-    $customer = adminReservasiUser('pelanggan');
-    $mobil = adminReservasiMobil('DD 6796 AC');
-    $mobil->update(['status' => 'disewa']);
-    $completed = createAdminTestReservation(
-        $customer,
-        $mobil,
-        today()->subDays(2)->toDateString(),
-        today()->toDateString(),
-        'disetujui',
-    );
-    createAdminTestReservation(
-        $customer,
-        $mobil,
-        today()->toDateString(),
-        today()->addDays(2)->toDateString(),
-        'disetujui',
-    );
-
-    $this->actingAs($admin)
-        ->post(route('admin.reservasi.complete', $completed))
-        ->assertRedirect(route('admin.reservasi.index'));
-
-    $this->assertDatabaseHas('reservasis', [
-        'id' => $completed->id,
-        'status' => 'selesai',
-    ]);
-    expect($mobil->fresh()->status)->toBe('disewa');
-});
-
-test('completing a reservation does not keep the car rented for a future approved reservation', function () {
-    $admin = adminReservasiUser('admin');
-    $customer = adminReservasiUser('pelanggan');
-    $mobil = adminReservasiMobil('DD 6796 AD');
-    $mobil->update(['status' => 'disewa']);
-    $completed = createAdminTestReservation(
-        $customer,
-        $mobil,
-        today()->subDays(2)->toDateString(),
-        today()->toDateString(),
-        'disetujui',
-    );
-    createAdminTestReservation(
-        $customer,
-        $mobil,
-        today()->addDays(3)->toDateString(),
-        today()->addDays(5)->toDateString(),
-        'disetujui',
-    );
-
-    $this->actingAs($admin)
-        ->post(route('admin.reservasi.complete', $completed))
-        ->assertRedirect(route('admin.reservasi.index'));
-
-    expect($mobil->fresh()->status)->toBe('tersedia');
-});
-
-test('completing an active reservation ignores a future approved reservation when syncing the operational status', function () {
-    $admin = adminReservasiUser('admin');
-    $customer = adminReservasiUser('pelanggan');
-    $mobil = adminReservasiMobil('DD 6796 AE');
-    $mobil->update(['status' => 'disewa']);
-    $completed = createAdminTestReservation(
-        $customer,
-        $mobil,
-        today()->subDays(1)->toDateString(),
-        today()->toDateString(),
-        'disetujui',
-    );
-    createAdminTestReservation(
-        $customer,
-        $mobil,
-        today()->addDays(2)->toDateString(),
-        today()->addDays(4)->toDateString(),
-        'disetujui',
-    );
-
-    $this->actingAs($admin)
-        ->post(route('admin.reservasi.complete', $completed))
-        ->assertRedirect(route('admin.reservasi.index'));
-
-    expect($mobil->fresh()->status)->toBe('tersedia');
-});
-
-test('an approved reservation cannot be completed before its end date', function () {
+test('an approved reservation cannot be completed without a saved return', function () {
     $admin = adminReservasiUser('admin');
     $customer = adminReservasiUser('pelanggan');
     $mobil = adminReservasiMobil('DD 6797 AB');
@@ -436,38 +343,19 @@ test('an approved reservation cannot be completed before its end date', function
     );
 
     $this->actingAs($admin)
-        ->from(route('admin.reservasi.index'))
-        ->post(route('admin.reservasi.complete', $reservasi))
-        ->assertRedirect(route('admin.reservasi.index'))
-        ->assertSessionHasErrors('reservasi');
+        ->post("/admin/reservasi/{$reservasi->id}/selesaikan")
+        ->assertNotFound();
 
     $this->assertDatabaseHas('reservasis', [
         'id' => $reservasi->id,
         'status' => 'disetujui',
     ]);
-});
-
-test('only approved reservations can be completed', function () {
-    $admin = adminReservasiUser('admin');
-    $customer = adminReservasiUser('pelanggan');
-    $mobil = adminReservasiMobil('DD 6798 AB');
-    $reservasi = createAdminTestReservation(
-        $customer,
-        $mobil,
-        today()->subDays(2)->toDateString(),
-        today()->toDateString(),
-    );
-
-    $this->actingAs($admin)
-        ->from(route('admin.reservasi.index'))
-        ->post(route('admin.reservasi.complete', $reservasi))
-        ->assertRedirect(route('admin.reservasi.index'))
-        ->assertSessionHasErrors('reservasi');
-
-    $this->assertDatabaseHas('reservasis', [
-        'id' => $reservasi->id,
-        'status' => 'menunggu_konfirmasi',
+    $this->assertDatabaseMissing('pengembalians', [
+        'reservasi_id' => $reservasi->id,
     ]);
+
+    expect(\Illuminate\Support\Facades\Route::has('admin.reservasi.complete'))
+        ->toBeFalse();
 });
 
 test('an admin can cancel a pending reservation', function () {
@@ -651,7 +539,11 @@ test('cancelling an admin reservation with recorded payments preserves payment r
     ]);
 
     $this->actingAs($admin)
-        ->post(route('admin.reservasi.cancel', $reservasi))
+        ->post(route('admin.reservasi.cancel', $reservasi), [
+            'jenis_refund' => 'penuh',
+            'nominal_refund' => 350000,
+            'alasan_refund' => 'Pembayaran dikembalikan penuh.',
+        ])
         ->assertRedirect(route('admin.reservasi.index'))
         ->assertSessionHas('success', 'Reservasi berhasil dibatalkan.');
 
@@ -662,6 +554,12 @@ test('cancelling an admin reservation with recorded payments preserves payment r
         'nominal_pembayaran' => 350000,
         'metode_pembayaran' => 'transfer',
         'status' => 'dibayar_sebagian',
+    ]);
+    $this->assertDatabaseHas('refunds', [
+        'reservasi_id' => $reservasi->id,
+        'jenis_refund' => 'penuh',
+        'nominal_refund' => 350000,
+        'status' => 'menunggu_pengembalian',
     ]);
 });
 

@@ -9,6 +9,12 @@
         </div>
     @endif
 
+    @if (session('error'))
+        <div class="mb-6 rounded-xl border border-error-200 bg-error-50 px-4 py-3 text-sm text-error-700 dark:border-error-500/20 dark:bg-error-500/15 dark:text-error-400" role="alert">
+            {{ session('error') }}
+        </div>
+    @endif
+
     @if ($errors->any())
         <div class="mb-6 rounded-xl border border-error-200 bg-error-50 px-4 py-3 text-sm text-error-700 dark:border-error-500/20 dark:bg-error-500/15 dark:text-error-400" role="alert">
             @foreach ($errors->all() as $error)
@@ -35,6 +41,7 @@
                     <tbody>
                         @forelse ($reservasis as $reservasi)
                             @php
+                                $totalPembayaran = round((float) $reservasi->pembayarans->sum('nominal_pembayaran'), 2);
                                 $statusColor = match ($reservasi->status) {
                                     'menunggu_konfirmasi' => 'warning',
                                     'disetujui' => 'success',
@@ -64,25 +71,28 @@
                                                 @csrf
                                                 <button type="submit" class="rounded-lg bg-error-50 px-3 py-2 text-sm font-medium text-error-700 transition hover:bg-error-100 dark:bg-error-500/15 dark:text-error-400 dark:hover:bg-error-500/25">Tolak</button>
                                             </form>
-                                            <form action="{{ route('admin.reservasi.cancel', $reservasi) }}" method="POST" onsubmit="return confirm('Batalkan reservasi ini?')">
-                                                @csrf
-                                                <button type="submit" class="rounded-lg bg-gray-100 px-3 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700">Batalkan</button>
-                                            </form>
+                                            @if ($totalPembayaran > 0)
+                                                <a href="{{ route('admin.refund.create', $reservasi) }}" class="rounded-lg bg-gray-100 px-3 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700">Batalkan &amp; Refund</a>
+                                            @else
+                                                <form action="{{ route('admin.reservasi.cancel', $reservasi) }}" method="POST" onsubmit="return confirm('Batalkan reservasi ini?')">
+                                                    @csrf
+                                                    <button type="submit" class="rounded-lg bg-gray-100 px-3 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700">Batalkan</button>
+                                                </form>
+                                            @endif
                                         </div>
                                     @elseif ($reservasi->status === 'disetujui')
                                         <div class="inline-flex items-center gap-2">
-                                            @if ($reservasi->canBeCompleted())
-                                                <form action="{{ route('admin.reservasi.complete', $reservasi) }}" method="POST" onsubmit="return confirm('Selesaikan reservasi ini?')">
-                                                    @csrf
-                                                    <button type="submit" class="rounded-lg bg-brand-500 px-3 py-2 text-sm font-medium text-white transition hover:bg-brand-600">Selesaikan</button>
-                                                </form>
+                                            <a href="{{ route('admin.pengembalian.create', $reservasi) }}" class="rounded-lg bg-brand-500 px-3 py-2 text-sm font-medium text-white transition hover:bg-brand-600">
+                                                Proses Pengembalian
+                                            </a>
+                                            @if ($totalPembayaran > 0)
+                                                <a href="{{ route('admin.refund.create', $reservasi) }}" class="rounded-lg bg-error-50 px-3 py-2 text-sm font-medium text-error-700 transition hover:bg-error-100 dark:bg-error-500/15 dark:text-error-400 dark:hover:bg-error-500/25">Batalkan &amp; Refund</a>
                                             @else
-                                                <span class="text-theme-xs text-gray-400 dark:text-gray-500">Menunggu tanggal selesai</span>
+                                                <form action="{{ route('admin.reservasi.cancel', $reservasi) }}" method="POST" onsubmit="return confirm('Batalkan reservasi ini?')">
+                                                    @csrf
+                                                    <button type="submit" class="rounded-lg bg-error-50 px-3 py-2 text-sm font-medium text-error-700 transition hover:bg-error-100 dark:bg-error-500/15 dark:text-error-400 dark:hover:bg-error-500/25">Batalkan</button>
+                                                </form>
                                             @endif
-                                            <form action="{{ route('admin.reservasi.cancel', $reservasi) }}" method="POST" onsubmit="return confirm('Batalkan reservasi ini?')">
-                                                @csrf
-                                                <button type="submit" class="rounded-lg bg-error-50 px-3 py-2 text-sm font-medium text-error-700 transition hover:bg-error-100 dark:bg-error-500/15 dark:text-error-400 dark:hover:bg-error-500/25">Batalkan</button>
-                                            </form>
                                         </div>
                                     @else
                                         <span class="text-theme-xs text-gray-400 dark:text-gray-500">Sudah diproses</span>

@@ -39,6 +39,12 @@ class MenuHelper
             ],
             [
                 'icon' => 'task',
+                'name' => 'Refund',
+                'path' => '/admin/refund',
+                'route' => 'admin.refund.index',
+            ],
+            [
+                'icon' => 'task',
                 'name' => 'Pengembalian',
                 'path' => '/admin/pengembalian',
                 'route' => 'admin.pengembalian.index',
@@ -46,12 +52,14 @@ class MenuHelper
             [
                 'icon' => 'user-profile',
                 'name' => 'Pelanggan',
-                'available' => false,
+                'path' => '/admin/pelanggan',
+                'route' => 'admin.pelanggan.index',
             ],
             [
                 'icon' => 'charts',
                 'name' => 'Laporan',
-                'available' => false,
+                'path' => '/admin/laporan',
+                'route' => 'admin.laporan.index',
             ],
             [
                 'icon' => 'pages',

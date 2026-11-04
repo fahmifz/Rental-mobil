@@ -23,7 +23,7 @@ class PembayaranController extends Controller
         $search = trim((string) $request->query('search', ''));
 
         $reservasis = Reservasi::query()
-            ->with(['user', 'mobil', 'pembayarans'])
+            ->with(['user', 'mobil', 'pembayarans', 'pengembalian'])
             ->whereIn('status', ['disetujui', 'selesai'])
             ->where(function ($query) use ($search): void {
                 if ($search !== '') {
@@ -46,7 +46,7 @@ class PembayaranController extends Controller
 
     public function show(Reservasi $reservasi): View
     {
-        $reservasi->load(['user', 'mobil', 'pembayarans.dicatatOleh']);
+        $reservasi->load(['user', 'mobil', 'pembayarans.dicatatOleh', 'pengembalian']);
 
         return view('pages.admin.pembayaran.show', [
             'reservasi' => $reservasi,
@@ -56,7 +56,7 @@ class PembayaranController extends Controller
 
     public function create(Reservasi $reservasi): View
     {
-        $reservasi->load(['user', 'mobil', 'pembayarans']);
+        $reservasi->load(['user', 'mobil', 'pembayarans', 'pengembalian']);
         $this->ensureReservasiEligible($reservasi);
 
         return view('pages.admin.pembayaran.create', [
@@ -107,7 +107,7 @@ class PembayaranController extends Controller
                 }
 
                 $nominal = round((float) $data['nominal_pembayaran'], 2);
-                $total = round((float) $lockedReservasi->total_biaya, 2);
+                $total = $lockedReservasi->totalAmountDue();
                 $totalPaid = round((float) $lockedReservasi->pembayarans()->sum('nominal_pembayaran'), 2);
                 $remaining = round($total - $totalPaid, 2);
 
@@ -160,7 +160,7 @@ class PembayaranController extends Controller
         }
 
         $totalPaid = round((float) $reservasi->pembayarans()->sum('nominal_pembayaran'), 2);
-        $total = round((float) $reservasi->total_biaya, 2);
+        $total = $reservasi->totalAmountDue();
 
         if ($totalPaid >= $total) {
             throw ValidationException::withMessages([

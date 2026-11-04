@@ -19,6 +19,15 @@
             <h1 class="mt-4 text-title-sm font-semibold text-gray-900 dark:text-white">Detail Reservasi</h1>
             <p class="mt-2 text-theme-sm text-gray-600 dark:text-gray-300">Nomor reservasi #{{ $reservasi->id }}</p>
 
+            @php
+                $totalPembayaranMasuk = round((float) $reservasi->pembayarans->sum('nominal_pembayaran'), 2);
+                $refund = $reservasi->refund;
+                $totalRefundDibayarkan = $refund?->status === 'dikembalikan'
+                    ? (float) $refund->nominal_refund
+                    : 0;
+                $saldoPembayaranBersih = $totalPembayaranMasuk - $totalRefundDibayarkan;
+            @endphp
+
             <dl class="mt-8 divide-y divide-gray-100 border-y border-gray-100 dark:divide-gray-800 dark:border-gray-800">
                 <div class="flex flex-wrap justify-between gap-2 py-4">
                     <dt class="text-theme-sm text-gray-500 dark:text-gray-400">Mobil</dt>
@@ -37,9 +46,48 @@
                     <dd class="text-theme-sm font-medium text-gray-800 dark:text-white/90">{{ $reservasi->durasi_sewa }} hari</dd>
                 </div>
                 <div class="flex flex-wrap justify-between gap-2 py-4">
-                    <dt class="text-theme-sm text-gray-500 dark:text-gray-400">Total biaya</dt>
+                    <dt class="text-theme-sm text-gray-500 dark:text-gray-400">Biaya sewa</dt>
                     <dd class="text-theme-sm font-semibold text-gray-900 dark:text-white">Rp{{ number_format((float) $reservasi->total_biaya, 0, ',', '.') }}</dd>
                 </div>
+                <div class="flex flex-wrap justify-between gap-2 py-4">
+                    <dt class="text-theme-sm text-gray-500 dark:text-gray-400">Denda keterlambatan</dt>
+                    <dd class="text-theme-sm font-medium text-gray-800 dark:text-white/90">Rp{{ number_format($reservasi->lateFeeAmount(), 0, ',', '.') }}</dd>
+                </div>
+                @if ($reservasi->status === 'dibatalkan')
+                    <div class="flex flex-wrap justify-between gap-2 py-4">
+                        <dt class="text-theme-sm text-gray-500 dark:text-gray-400">Pembayaran masuk</dt>
+                        <dd class="text-theme-sm font-medium text-gray-800 dark:text-white/90">Rp{{ number_format($totalPembayaranMasuk, 0, ',', '.') }}</dd>
+                    </div>
+                    <div class="flex flex-wrap justify-between gap-2 py-4">
+                        <dt class="text-theme-sm text-gray-500 dark:text-gray-400">Refund sudah dikembalikan</dt>
+                        <dd class="text-theme-sm font-medium text-gray-800 dark:text-white/90">Rp{{ number_format($totalRefundDibayarkan, 0, ',', '.') }}</dd>
+                    </div>
+                    <div class="flex flex-wrap justify-between gap-2 py-4">
+                        <dt class="text-theme-sm text-gray-500 dark:text-gray-400">Saldo pembayaran bersih</dt>
+                        <dd class="text-theme-sm font-semibold text-brand-700 dark:text-brand-300">Rp{{ number_format($saldoPembayaranBersih, 0, ',', '.') }}</dd>
+                    </div>
+                @else
+                    <div class="flex flex-wrap justify-between gap-2 py-4">
+                        <dt class="text-theme-sm text-gray-500 dark:text-gray-400">Total kewajiban pembayaran</dt>
+                        <dd class="text-theme-sm font-semibold text-gray-900 dark:text-white">Rp{{ number_format($reservasi->totalAmountDue(), 0, ',', '.') }}</dd>
+                    </div>
+                    <div class="flex flex-wrap justify-between gap-2 py-4">
+                        <dt class="text-theme-sm text-gray-500 dark:text-gray-400">Sudah dibayar</dt>
+                        <dd class="text-theme-sm font-medium text-gray-800 dark:text-white/90">Rp{{ number_format($reservasi->totalPaid(), 0, ',', '.') }}</dd>
+                    </div>
+                    <div class="flex flex-wrap justify-between gap-2 py-4">
+                        <dt class="text-theme-sm text-gray-500 dark:text-gray-400">Sisa tagihan</dt>
+                        <dd class="text-theme-sm font-semibold text-brand-700 dark:text-brand-300">Rp{{ number_format($reservasi->remainingAmount(), 0, ',', '.') }}</dd>
+                    </div>
+                    <div class="flex flex-wrap justify-between gap-2 py-4">
+                        <dt class="text-theme-sm text-gray-500 dark:text-gray-400">Status pembayaran</dt>
+                        <dd><x-ui.badge :color="match ($reservasi->paymentStatus()) {
+                            'lunas' => 'success',
+                            'dibayar_sebagian' => 'warning',
+                            default => 'error',
+                        }">{{ ucwords(str_replace('_', ' ', $reservasi->paymentStatus())) }}</x-ui.badge></dd>
+                    </div>
+                @endif
                 <div class="flex flex-wrap justify-between gap-2 py-4">
                     <dt class="text-theme-sm text-gray-500 dark:text-gray-400">Status</dt>
                     <dd><x-ui.badge :color="match ($reservasi->status) {
@@ -51,6 +99,55 @@
                     }">{{ ucwords(str_replace('_', ' ', $reservasi->status)) }}</x-ui.badge></dd>
                 </div>
             </dl>
+
+            @if ($reservasi->status === 'dibatalkan')
+                <section class="mt-6 rounded-xl border border-gray-200 p-4 dark:border-gray-800">
+                    <h2 class="text-theme-sm font-semibold text-gray-900 dark:text-white">Informasi Refund</h2>
+                    <p class="mt-1 text-theme-xs text-gray-500 dark:text-gray-400">Reservasi telah dibatalkan dan tidak memiliki tunggakan pembayaran aktif.</p>
+
+                    @if ($refund)
+                        @php
+                            $refundStatusColor = match ($refund->status) {
+                                'menunggu_pengembalian' => 'warning',
+                                'dikembalikan' => 'success',
+                                'tidak_ada_refund' => 'light',
+                            };
+                        @endphp
+                        <dl class="mt-4 divide-y divide-gray-100 border-y border-gray-100 dark:divide-gray-800 dark:border-gray-800">
+                            <div class="flex flex-wrap justify-between gap-2 py-3">
+                                <dt class="text-theme-sm text-gray-500 dark:text-gray-400">Keputusan refund</dt>
+                                <dd class="text-theme-sm font-medium text-gray-800 dark:text-white/90">{{ ucwords(str_replace('_', ' ', $refund->jenis_refund)) }}</dd>
+                            </div>
+                            <div class="flex flex-wrap justify-between gap-2 py-3">
+                                <dt class="text-theme-sm text-gray-500 dark:text-gray-400">Nominal refund</dt>
+                                <dd class="text-theme-sm font-medium text-gray-800 dark:text-white/90">Rp{{ number_format((float) $refund->nominal_refund, 0, ',', '.') }}</dd>
+                            </div>
+                            <div class="flex flex-wrap justify-between gap-2 py-3">
+                                <dt class="text-theme-sm text-gray-500 dark:text-gray-400">Status refund</dt>
+                                <dd><x-ui.badge :color="$refundStatusColor">{{ ucwords(str_replace('_', ' ', $refund->status)) }}</x-ui.badge></dd>
+                            </div>
+                            <div class="py-3">
+                                <dt class="text-theme-sm text-gray-500 dark:text-gray-400">Alasan</dt>
+                                <dd class="mt-1 whitespace-pre-line text-theme-sm text-gray-800 dark:text-white/90">{{ $refund->alasan }}</dd>
+                            </div>
+                            @if ($refund->status === 'dikembalikan')
+                                <div class="flex flex-wrap justify-between gap-2 py-3">
+                                    <dt class="text-theme-sm text-gray-500 dark:text-gray-400">Tanggal pengembalian dana</dt>
+                                    <dd class="text-theme-sm font-medium text-gray-800 dark:text-white/90">{{ $refund->tanggal_refund?->format('d M Y H:i') }}</dd>
+                                </div>
+                                <div class="flex flex-wrap justify-between gap-2 py-3">
+                                    <dt class="text-theme-sm text-gray-500 dark:text-gray-400">Metode pengembalian dana</dt>
+                                    <dd class="text-theme-sm font-medium text-gray-800 dark:text-white/90">{{ ucfirst($refund->metode_refund) }}</dd>
+                                </div>
+                            @endif
+                        </dl>
+                    @elseif ($totalPembayaranMasuk > 0)
+                        <p class="mt-4 text-theme-sm text-gray-600 dark:text-gray-300">Keputusan refund belum tercatat. Silakan hubungi Admin untuk informasi lebih lanjut.</p>
+                    @else
+                        <p class="mt-4 text-theme-sm text-gray-600 dark:text-gray-300">Belum ada pembayaran masuk, sehingga tidak ada transaksi refund.</p>
+                    @endif
+                </section>
+            @endif
 
             @if ($reservasi->canBeCancelledByCustomer())
                 <div class="mt-6 border-t border-gray-100 pt-6 dark:border-gray-800">

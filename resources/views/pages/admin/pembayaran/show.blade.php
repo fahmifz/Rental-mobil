@@ -10,14 +10,18 @@
     <x-common.component-card title="Pembayaran Reservasi #{{ $reservasi->id }}" desc="Ringkasan tagihan dan riwayat transaksi pembayaran.">
         @php
             $dibayar = $reservasi->totalPaid();
-            $total = (float) $reservasi->total_biaya;
+            $biayaSewa = (float) $reservasi->total_biaya;
+            $denda = $reservasi->lateFeeAmount();
+            $total = $reservasi->totalAmountDue();
             $sisa = $reservasi->remainingAmount();
             $status = $reservasi->paymentStatus();
         @endphp
         <dl class="divide-y divide-gray-100 border-y border-gray-100 dark:divide-gray-800 dark:border-gray-800">
             <div class="flex justify-between gap-3 py-4"><dt class="text-theme-sm text-gray-500 dark:text-gray-400">Pelanggan</dt><dd class="text-end text-theme-sm font-medium text-gray-800 dark:text-white/90">{{ $reservasi->user->name }} · {{ $reservasi->user->email }}</dd></div>
             <div class="flex justify-between gap-3 py-4"><dt class="text-theme-sm text-gray-500 dark:text-gray-400">Mobil</dt><dd class="text-end text-theme-sm font-medium text-gray-800 dark:text-white/90">{{ $reservasi->mobil->nama_mobil }}</dd></div>
-            <div class="flex justify-between gap-3 py-4"><dt class="text-theme-sm text-gray-500 dark:text-gray-400">Total biaya</dt><dd class="text-end text-theme-sm font-semibold text-gray-900 dark:text-white">Rp{{ number_format((float) $reservasi->total_biaya, 0, ',', '.') }}</dd></div>
+            <div class="flex justify-between gap-3 py-4"><dt class="text-theme-sm text-gray-500 dark:text-gray-400">Biaya sewa</dt><dd class="text-end text-theme-sm font-medium text-gray-800 dark:text-white/90">Rp{{ number_format($biayaSewa, 0, ',', '.') }}</dd></div>
+            <div class="flex justify-between gap-3 py-4"><dt class="text-theme-sm text-gray-500 dark:text-gray-400">Denda keterlambatan</dt><dd class="text-end text-theme-sm font-medium text-gray-800 dark:text-white/90">Rp{{ number_format($denda, 0, ',', '.') }}</dd></div>
+            <div class="flex justify-between gap-3 py-4"><dt class="text-theme-sm text-gray-500 dark:text-gray-400">Total tagihan</dt><dd class="text-end text-theme-sm font-semibold text-gray-900 dark:text-white">Rp{{ number_format($total, 0, ',', '.') }}</dd></div>
             <div class="flex justify-between gap-3 py-4"><dt class="text-theme-sm text-gray-500 dark:text-gray-400">Sudah dibayar</dt><dd class="text-end text-theme-sm font-semibold text-gray-900 dark:text-white">Rp{{ number_format($dibayar, 0, ',', '.') }}</dd></div>
             <div class="flex justify-between gap-3 py-4"><dt class="text-theme-sm text-gray-500 dark:text-gray-400">Sisa tagihan</dt><dd class="text-end text-theme-sm font-semibold text-brand-700 dark:text-brand-300">Rp{{ number_format($sisa, 0, ',', '.') }}</dd></div>
             <div class="flex justify-between gap-3 py-4"><dt class="text-theme-sm text-gray-500 dark:text-gray-400">Status</dt><dd><x-ui.badge :color="$status === 'lunas' ? 'success' : ($status === 'dibayar_sebagian' ? 'warning' : 'error')">{{ str_replace('_', ' ', ucfirst($status)) }}</x-ui.badge></dd></div>

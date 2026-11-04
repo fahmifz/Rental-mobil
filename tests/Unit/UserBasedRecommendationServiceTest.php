@@ -2,19 +2,20 @@
 
 use App\Services\UserBasedRecommendationService;
 
-it('calculates user cosine manually with shared dimensions and full-user norms', function () {
+it('calculates cosine from co-rated items only even when a neighbor rates an extra car', function () {
     $service = new UserBasedRecommendationService;
 
     $userA = [1 => 4, 2 => 4];
-    $userB = [1 => 2, 2 => 5, 3 => 5];
+    $userB = [1 => 4, 2 => 4, 3 => 1];
 
-    $dotProduct = 4 * 2 + 4 * 5;
+    $dotProduct = 4 * 4 + 4 * 4;
     $normA = sqrt(4 ** 2 + 4 ** 2);
-    $normB = sqrt(2 ** 2 + 5 ** 2 + 5 ** 2);
+    $normB = sqrt(4 ** 2 + 4 ** 2);
     $expected = $dotProduct / ($normA * $normB);
 
     expect(abs($service->cosineSimilarity($userA, $userB, 2) - $expected))
         ->toBeLessThan(0.000001)
+        ->and(abs($expected - 1.0))->toBeLessThan(0.000001)
         ->and($service->cosineSimilarity($userA, $userB, 2))
         ->toBe($service->cosineSimilarity($userB, $userA, 2));
 });
@@ -29,14 +30,14 @@ it('requires two shared items by default and returns zero for no shared dimensio
         ->and($service->cosineSimilarity([1 => 1, 2 => 1], [1 => -1, 2 => -1], 2))->toBe(0.0);
 });
 
-it('does not treat missing ratings as zero values in option b cosine', function () {
+it('does not include ratings outside co-rated items in cosine norms', function () {
     $service = new UserBasedRecommendationService;
 
     $userA = [1 => 5, 2 => 4];
     $userB = [1 => 4, 2 => 4, 3 => 5];
 
     $dot = 5 * 4 + 4 * 4;
-    $expected = $dot / (sqrt(5 ** 2 + 4 ** 2) * sqrt(4 ** 2 + 4 ** 2 + 5 ** 2));
+    $expected = $dot / (sqrt(5 ** 2 + 4 ** 2) * sqrt(4 ** 2 + 4 ** 2));
 
     expect(abs($service->cosineSimilarity($userA, $userB, 2) - $expected))
         ->toBeLessThan(0.000001);
@@ -204,6 +205,21 @@ it('selects neighbors per candidate and applies K with user ID ties', function (
         ->and($twoCandidate['neighbor_count'])->toBe(2);
 });
 
+it('uses at most five highest-similarity neighbors for a candidate', function () {
+    $service = new UserBasedRecommendationService(5, 2);
+
+    $matrix = [1 => [1 => 4, 2 => 4]];
+    foreach (range(2, 7) as $userId) {
+        $matrix[$userId] = [1 => 4, 2 => 4, 3 => $userId % 2 === 0 ? 5 : 3];
+    }
+
+    $candidate = collect($service->recommend(1, $matrix, 5, 2))
+        ->firstWhere('mobil_id', 3);
+
+    expect($candidate)->not->toBeNull()
+        ->and($candidate['neighbor_count'])->toBe(5);
+});
+
 it('orders recommendations by full precision and uses mobil ID for ties', function () {
     $service = new UserBasedRecommendationService;
 
@@ -240,21 +256,21 @@ it('verifies the complete four-user cosine and recommendation dataset mathematic
     $dot12 = (4 * 2) + (4 * 5);
     $cosine12 = $dot12 / (
         sqrt((4 ** 2) + (4 ** 2))
-        * sqrt((2 ** 2) + (5 ** 2) + (5 ** 2))
+        * sqrt((2 ** 2) + (5 ** 2))
     );
 
     $dot13 = (4 * 1) + (4 * 1);
     $cosine13 = $dot13 / (
         sqrt((4 ** 2) + (4 ** 2))
-        * sqrt((1 ** 2) + (1 ** 2) + (1 ** 2))
+        * sqrt((1 ** 2) + (1 ** 2))
     );
 
-    expect(abs($service->cosineSimilarity($matrix[1], $matrix[2], 2) - 0.673575314054563))
+    expect(abs($service->cosineSimilarity($matrix[1], $matrix[2], 2) - 0.919145030018058))
         ->toBeLessThan(0.000001)
-        ->and(abs($service->cosineSimilarity($matrix[1], $matrix[3], 2) - 0.816496580927726))
+        ->and(abs($service->cosineSimilarity($matrix[1], $matrix[3], 2) - 1.0))
         ->toBeLessThan(0.000001)
-        ->and(abs($cosine12 - 0.673575314054563))->toBeLessThan(0.000001)
-        ->and(abs($cosine13 - 0.816496580927726))->toBeLessThan(0.000001)
+        ->and(abs($cosine12 - 0.919145030018058))->toBeLessThan(0.000001)
+        ->and(abs($cosine13 - 1.0))->toBeLessThan(0.000001)
         ->and($service->cosineSimilarity($matrix[1], $matrix[4], 2))->toBe(0.0);
 
     $oneNeighbor = $service->recommend(1, $matrix, 1, 2);
@@ -275,7 +291,7 @@ it('verifies the complete four-user cosine and recommendation dataset mathematic
     $twoNeighbors = $service->recommend(1, $matrix, 2, 2);
     expect($twoNeighbors)->toHaveCount(1)
         ->and($twoNeighbors[0]['mobil_id'])->toBe(3)
-        ->and(abs($manualPrediction - 4.452042157376956))->toBeLessThan(0.000001)
-        ->and(abs($twoNeighbors[0]['predicted_rating'] - 4.452042157376956))->toBeLessThan(0.000001)
+        ->and(abs($manualPrediction - 4.4789346378942))->toBeLessThan(0.000001)
+        ->and(abs($twoNeighbors[0]['predicted_rating'] - 4.4789346378942))->toBeLessThan(0.000001)
         ->and($twoNeighbors[0]['neighbor_count'])->toBe(2);
 });

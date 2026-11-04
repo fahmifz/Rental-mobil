@@ -3,11 +3,14 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\CancelReservasiRequest;
 use App\Models\Mobil;
+use App\Models\Refund;
 use App\Models\Reservasi;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
+use InvalidArgumentException;
 use Illuminate\View\View;
 
 class AdminReservasiController extends Controller
@@ -15,7 +18,7 @@ class AdminReservasiController extends Controller
     public function index(): View
     {
         $reservasis = Reservasi::query()
-            ->with(['user', 'mobil'])
+            ->with(['user', 'mobil', 'pembayarans'])
             ->latest()
             ->paginate(10);
 
@@ -35,62 +38,107 @@ class AdminReservasiController extends Controller
         return $this->updatePendingReservation($reservasi, 'ditolak');
     }
 
-    public function cancel(Reservasi $reservasi): RedirectResponse
+    public function cancel(CancelReservasiRequest $request, Reservasi $reservasi): RedirectResponse
     {
-        DB::transaction(function () use ($reservasi): void {
-            $mobil = Mobil::query()
-                ->lockForUpdate()
-                ->findOrFail($reservasi->mobil_id);
+        $data = $request->validated();
 
-            $lockedReservasi = Reservasi::query()
-                ->lockForUpdate()
-                ->findOrFail($reservasi->id);
+        try {
+            DB::transaction(function () use ($request, $reservasi, $data): void {
+                $mobil = Mobil::query()
+                    ->lockForUpdate()
+                    ->findOrFail($reservasi->mobil_id);
 
-            if (! in_array($lockedReservasi->status, ['menunggu_konfirmasi', 'disetujui'], true)) {
-                throw ValidationException::withMessages([
-                    'reservasi' => 'Reservasi dengan status ' . ucwords(str_replace('_', ' ', $lockedReservasi->status)) . ' tidak dapat dibatalkan.',
+                $lockedReservasi = Reservasi::query()
+                    ->with('refund')
+                    ->lockForUpdate()
+                    ->findOrFail($reservasi->id);
+
+                if (! in_array($lockedReservasi->status, ['menunggu_konfirmasi', 'disetujui'], true)) {
+                    throw ValidationException::withMessages([
+                        'reservasi' => 'Reservasi dengan status ' . ucwords(str_replace('_', ' ', $lockedReservasi->status)) . ' tidak dapat dibatalkan.',
+                    ]);
+                }
+
+                if ($lockedReservasi->refund !== null) {
+                    throw ValidationException::withMessages([
+                        'refund' => 'Keputusan refund untuk reservasi ini sudah tercatat.',
+                    ]);
+                }
+
+                $totalPembayaran = $lockedReservasi->totalPaid();
+                $refundData = $totalPembayaran > 0
+                    ? $this->refundDecisionData($data)
+                    : null;
+                $alasanPembatalan = trim((string) ($data['alasan_pembatalan'] ?? ''))
+                    ?: ($refundData['alasan'] ?? null);
+
+                $lockedReservasi->update([
+                    'status' => 'dibatalkan',
+                    'dibatalkan_pada' => now(),
+                    'dibatalkan_oleh_id' => $request->user()->id,
+                    'alasan_pembatalan' => $alasanPembatalan,
                 ]);
-            }
 
-            $lockedReservasi->update(['status' => 'dibatalkan']);
-            $mobil->syncOperationalStatus(today());
-        });
+                if ($refundData !== null) {
+                    Refund::query()->create([
+                        'reservasi_id' => $lockedReservasi->id,
+                        'jenis_refund' => $refundData['jenis_refund'],
+                        'nominal_refund' => $refundData['nominal_refund'],
+                        'status' => $refundData['status'],
+                        'alasan' => $refundData['alasan'],
+                        'diputuskan_pada' => now(),
+                        'diputuskan_oleh_id' => $request->user()->id,
+                    ]);
+                }
+
+                $mobil->syncOperationalStatus(today());
+            });
+        } catch (InvalidArgumentException $exception) {
+            throw ValidationException::withMessages([
+                'refund' => $exception->getMessage(),
+            ]);
+        }
 
         return redirect()
             ->route('admin.reservasi.index')
             ->with('success', 'Reservasi berhasil dibatalkan.');
     }
 
-    public function complete(Reservasi $reservasi): RedirectResponse
+    /**
+     * @param  array<string, mixed>  $data
+     * @return array{jenis_refund: string, nominal_refund: float, status: string, alasan: string}
+     */
+    private function refundDecisionData(array $data): array
     {
-        DB::transaction(function () use ($reservasi): void {
-            $mobil = Mobil::query()
-                ->lockForUpdate()
-                ->findOrFail($reservasi->mobil_id);
+        $errors = [];
 
-            $lockedReservasi = Reservasi::query()
-                ->lockForUpdate()
-                ->findOrFail($reservasi->id);
-
-            if ($lockedReservasi->status !== 'disetujui') {
-                throw ValidationException::withMessages([
-                    'reservasi' => 'Hanya reservasi yang disetujui yang dapat diselesaikan.',
-                ]);
+        foreach (['jenis_refund', 'nominal_refund', 'alasan_refund'] as $field) {
+            if (! array_key_exists($field, $data) || $data[$field] === null || $data[$field] === '') {
+                $errors[$field] = 'Keputusan refund wajib diisi untuk reservasi yang sudah memiliki pembayaran.';
             }
+        }
 
-            if ($lockedReservasi->tanggal_selesai->isAfter(today())) {
-                throw ValidationException::withMessages([
-                    'reservasi' => 'Reservasi belum dapat diselesaikan sebelum tanggal selesai sewa.',
-                ]);
-            }
+        if ($errors !== []) {
+            throw ValidationException::withMessages($errors);
+        }
 
-            $lockedReservasi->update(['status' => 'selesai']);
-            $mobil->syncOperationalStatus(today());
-        });
+        $jenisRefund = (string) $data['jenis_refund'];
+        $alasanRefund = trim((string) $data['alasan_refund']);
 
-        return redirect()
-            ->route('admin.reservasi.index')
-            ->with('success', 'Reservasi berhasil diselesaikan.');
+        if ($alasanRefund === '') {
+            throw ValidationException::withMessages([
+                'alasan_refund' => 'Alasan keputusan refund wajib diisi.',
+            ]);
+        }
+
+        return [
+            'jenis_refund' => $jenisRefund,
+            'nominal_refund' => round((float) $data['nominal_refund'], 2),
+            'status' => $jenisRefund === 'tidak_ada'
+                ? 'tidak_ada_refund'
+                : 'menunggu_pengembalian',
+            'alasan' => $alasanRefund,
+        ];
     }
 
     private function updatePendingReservation(Reservasi $reservasi, string $status): RedirectResponse

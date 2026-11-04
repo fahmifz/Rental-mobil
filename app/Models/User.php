@@ -71,4 +71,19 @@ class User extends Authenticatable
     {
         return $this->hasMany(Pembayaran::class, 'dicatat_oleh_id');
     }
+
+    public function refundDiputuskan(): HasMany
+    {
+        return $this->hasMany(Refund::class, 'diputuskan_oleh_id');
+    }
+
+    public function refundDikonfirmasi(): HasMany
+    {
+        return $this->hasMany(Refund::class, 'dikonfirmasi_oleh_id');
+    }
+
+    public function reservasiDibatalkan(): HasMany
+    {
+        return $this->hasMany(Reservasi::class, 'dibatalkan_oleh_id');
+    }
 }

@@ -28,6 +28,9 @@
                     <a href="{{ route('login') }}" class="rounded-lg px-4 py-2 text-theme-sm font-medium text-gray-700 transition hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-white/[0.03]">Login</a>
                     <a href="{{ route('register') }}" class="rounded-lg bg-brand-500 px-4 py-2 text-theme-sm font-medium text-white shadow-theme-xs transition hover:bg-brand-600">Daftar</a>
                 @else
+                    @if (auth()->user()->isPelanggan())
+                        <a href="{{ route('pelanggan.rekomendasi.index') }}" class="rounded-lg px-4 py-2 text-theme-sm font-medium text-gray-700 transition hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-white/[0.03]">Rekomendasi</a>
+                    @endif
                     <a href="{{ auth()->user()->isAdmin() ? route('dashboard') : route('account') }}" class="rounded-lg px-4 py-2 text-theme-sm font-medium text-gray-700 transition hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-white/[0.03]">Akun</a>
                     <form action="{{ route('logout') }}" method="POST">
                         @csrf
@@ -52,6 +55,9 @@
                     <a href="{{ route('login') }}" class="rounded-lg px-3 py-2 text-theme-sm font-medium text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-white/[0.03]">Login</a>
                     <a href="{{ route('register') }}" class="rounded-lg bg-brand-500 px-3 py-2 text-theme-sm font-medium text-white">Daftar</a>
                 @else
+                    @if (auth()->user()->isPelanggan())
+                        <a href="{{ route('pelanggan.rekomendasi.index') }}" class="rounded-lg px-3 py-2 text-theme-sm font-medium text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-white/[0.03]">Rekomendasi Mobil</a>
+                    @endif
                     <a href="{{ auth()->user()->isAdmin() ? route('dashboard') : route('account') }}" class="rounded-lg px-3 py-2 text-theme-sm font-medium text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-white/[0.03]">Akun</a>
                     <form action="{{ route('logout') }}" method="POST" class="px-3 py-2">
                         @csrf

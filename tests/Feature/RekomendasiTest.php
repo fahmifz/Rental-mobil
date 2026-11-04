@@ -57,7 +57,7 @@ test('authenticated customer sees the empty recommendation state', function () {
         ->get(route('pelanggan.rekomendasi.index'))
         ->assertOk()
         ->assertSee('Belum ada rekomendasi')
-        ->assertSee('Rating dan tetangga yang cukup belum tersedia');
+        ->assertSee('Anda belum memiliki rating yang cukup');
 });
 
 test('available cars preserve recommendation ranking and unavailable cars are hidden', function () {

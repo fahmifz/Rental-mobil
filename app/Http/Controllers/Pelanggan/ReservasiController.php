@@ -179,7 +179,7 @@ class ReservasiController extends Controller
     {
         $reservasi = $request->user()
             ->reservasis()
-            ->with(['mobil', 'rating'])
+            ->with(['mobil', 'rating', 'pengembalian', 'pembayarans', 'refund'])
             ->findOrFail($reservasi);
 
         return view('pages.reservasi.show', [

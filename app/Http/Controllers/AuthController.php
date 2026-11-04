@@ -70,7 +70,28 @@ class AuthController extends Controller
 
     public function account(Request $request): View
     {
-        return view('pages.account', ['user' => $request->user()]);
+        $user = $request->user();
+        $statistics = [
+            'total_reservasi' => $user->reservasis()->count(),
+            'penyewaan_aktif' => $user->reservasis()
+                ->where('status', 'disetujui')
+                ->whereDate('tanggal_mulai', '<=', today()->toDateString())
+                ->whereDate('tanggal_selesai', '>=', today()->toDateString())
+                ->count(),
+            'rating_diberikan' => $user->ratings()->count(),
+        ];
+        $recentReservations = $user->reservasis()
+            ->with('mobil')
+            ->latest()
+            ->take(3)
+            ->get();
+
+        return view('pages.account', [
+            'user' => $user,
+            'statistics' => $statistics,
+            'recentReservations' => $recentReservations,
+            'title' => 'Dashboard Penyewa',
+        ]);
     }
 
     public function profile(Request $request): View
