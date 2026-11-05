@@ -61,11 +61,6 @@ class MenuHelper
                 'path' => '/admin/laporan',
                 'route' => 'admin.laporan.index',
             ],
-            [
-                'icon' => 'pages',
-                'name' => 'Pengaturan',
-                'available' => false,
-            ],
         ];
     }
 
