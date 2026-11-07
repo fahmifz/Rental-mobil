@@ -118,11 +118,11 @@
                     document.removeEventListener('visibilitychange', this.visibilityHandler);
                 },
                 startAutoplay() {
-                    if (this.reducedMotion || this.isPaused || this.isDocumentHidden || this.totalSlides < 2 || this.autoplay) return;
-                    this.autoplay = window.setInterval(() => this.next(), 4500);
+                    if (this.isPaused || this.isDocumentHidden || this.totalSlides < 2 || this.autoplay !== null) return;
+                    this.autoplay = window.setInterval(() => this.next(), 8000);
                 },
                 stopAutoplay() {
-                    if (this.autoplay) {
+                    if (this.autoplay !== null) {
                         window.clearInterval(this.autoplay);
                         this.autoplay = null;
                     }
@@ -160,12 +160,12 @@
                     <img
                         x-show="activeSlide === {{ $index }} && !failedSlides[{{ $index }}]"
                         x-cloak
-                        x-transition:enter="transition duration-700 ease-out motion-reduce:transition-none"
-                        x-transition:enter-start="scale-105 opacity-0"
+                        x-transition:enter="transition duration-[1200ms] ease-in-out motion-reduce:transition-none"
+                        x-transition:enter-start="scale-[1.02] opacity-0"
                         x-transition:enter-end="scale-100 opacity-100"
-                        x-transition:leave="transition duration-700 ease-out motion-reduce:transition-none"
+                        x-transition:leave="transition duration-[1200ms] ease-in-out motion-reduce:transition-none"
                         x-transition:leave-start="scale-100 opacity-100"
-                        x-transition:leave-end="scale-105 opacity-0"
+                        x-transition:leave-end="scale-[1.015] opacity-0"
                         x-on:error="failedSlides[{{ $index }}] = true; if (activeSlide === {{ $index }}) next()"
                         src="{{ $mobil->hero_photo_url }}"
                         alt="{{ $mobil->nama_mobil }}"
@@ -198,7 +198,7 @@
                 @if ($heroMobils->isNotEmpty())
                     <div class="relative z-10 mt-8 w-full max-w-sm xl:absolute xl:bottom-20 xl:end-24 xl:mt-0">
                         @foreach ($heroMobils as $index => $mobil)
-                            <article x-show="activeSlide === {{ $index }} && !failedSlides[{{ $index }}]" x-cloak x-transition:enter="transition duration-500 ease-out motion-reduce:transition-none" x-transition:enter-start="translate-y-3 opacity-0" x-transition:enter-end="translate-y-0 opacity-100" x-transition:leave="transition duration-300 ease-in motion-reduce:transition-none" x-transition:leave-start="translate-y-0 opacity-100" x-transition:leave-end="translate-y-2 opacity-0" class="rounded-2xl border border-white/20 bg-gray-950/60 p-5 shadow-theme-lg backdrop-blur-md" role="group" aria-roledescription="slide" aria-label="{{ $index + 1 }} dari {{ $heroMobils->count() }}">
+                            <article x-show="activeSlide === {{ $index }} && !failedSlides[{{ $index }}]" x-cloak x-transition:enter="transition duration-700 ease-out motion-reduce:transition-none" x-transition:enter-start="translate-y-1 opacity-0" x-transition:enter-end="translate-y-0 opacity-100" x-transition:leave="transition duration-[650ms] ease-in-out motion-reduce:transition-none" x-transition:leave-start="translate-y-0 opacity-100" x-transition:leave-end="translate-y-1 opacity-0" class="rounded-2xl border border-white/20 bg-gray-950/60 p-5 shadow-theme-lg backdrop-blur-md" role="group" aria-roledescription="slide" aria-label="{{ $index + 1 }} dari {{ $heroMobils->count() }}">
                                 <p class="text-theme-xs font-semibold uppercase tracking-[0.16em] text-brand-300">Armada tersedia</p>
                                 <h2 class="mt-2 text-theme-xl font-bold text-white">{{ $mobil->nama_mobil }}</h2>
                                 <p class="mt-1 text-theme-sm text-gray-200">{{ $mobil->merek }}{{ $mobil->tipe ? ' · '.$mobil->tipe : '' }}</p>

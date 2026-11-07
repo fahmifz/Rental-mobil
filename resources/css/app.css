@@ -48,7 +48,7 @@
   }
 
   .hero-slider-progress-active {
-    animation: landing-hero-progress 4500ms linear both;
+    animation: landing-hero-progress 8000ms linear both;
   }
 
   .hero-slider-progress-paused {

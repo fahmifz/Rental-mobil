@@ -113,7 +113,12 @@ test('the public landing page builds hero slides from available cars with valid 
         ->assertDontSee('Mobil Tidak Tersedia')
         ->assertSee('hero-slider-progress', false)
         ->assertSee('prefers-reduced-motion', false)
-        ->assertSee('visibilitychange', false);
+        ->assertSee('visibilitychange', false)
+        ->assertSee('if (this.isPaused || this.isDocumentHidden || this.totalSlides < 2 || this.autoplay !== null) return;', false)
+        ->assertDontSee('if (this.reducedMotion || this.isPaused', false)
+        ->assertSee('this.autoplay = window.setInterval(() => this.next(), 8000);', false)
+        ->assertSee('duration-[1200ms]', false)
+        ->assertSee('scale-[1.02]', false);
 });
 
 test('the landing page keeps a fallback hero and hides controls when no hero photo is valid', function () {
